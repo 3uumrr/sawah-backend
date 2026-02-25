@@ -52,16 +52,20 @@ public class User {
 
     @Column(name = "preferred_language")
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private PreferredLanguage preferredLanguage = PreferredLanguage.AR;
 
     @Column(name = "account_status")
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private UserAccStatus accountStatus = UserAccStatus.ACTIVE;
 
     @Column(name = "created_at" , updatable = false)
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "updated_at")
+    @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     // Relationships

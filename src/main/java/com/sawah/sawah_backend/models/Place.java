@@ -56,9 +56,11 @@ public class Place {
     private String bookingUrl;
 
     @Column(name = "created_at" , updatable = false)
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "updated_at")
+    @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @ManyToOne
