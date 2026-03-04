@@ -26,6 +26,7 @@ public class Category {
     private String iconUrl;
 
     @Column(name = "display_order")
+    @Builder.Default
     private Integer displayOrder = 0;
 
     @Column(name = "created_at", nullable = false, updatable = false)
