@@ -37,13 +37,13 @@ public class User {
     @Column(name = "password" , nullable = false , length = 255)
     private String password;
 
-    @Column(name = "country" , nullable = false , length = 100)
+    @Column(name = "country" , length = 100)
     private String country;
 
-    @Column(name = "phone_number" , nullable = false , length = 20)
+    @Column(name = "phone_number" , length = 20)
     private String phoneNumber;
 
-    @Column(name = "gender" , nullable = false , length = 6)
+    @Column(name = "gender", length = 6)
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
@@ -59,6 +59,10 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private UserAccStatus accountStatus = UserAccStatus.ACTIVE;
+
+    @Column(name = "is_profile_complete" , nullable = false)
+    @Builder.Default
+    private Boolean isProfileComplete = false;
 
     @Column(name = "created_at" , updatable = false)
     @Builder.Default
