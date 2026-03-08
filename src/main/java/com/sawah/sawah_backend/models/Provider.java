@@ -14,6 +14,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Builder
 @Entity(name = "providers")
+@Table(name = "providers" , indexes = {
+        @Index(name = "idx_provider_nationalId" , columnList = "national_id" , unique = true),
+})
 public class Provider {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,6 +24,15 @@ public class Provider {
 
     @Column(columnDefinition = "TEXT")
     private String bio;
+
+    @Column(name = "national_id", length = 14)
+    private String nationalId;
+
+    @Column(name = "national_id_front_url")
+    private String nationalIdFrontUrl;
+
+    @Column(name = "national_id_back_url")
+    private String nationalIdBackUrl;
 
     @Column(name = "account_status" , nullable = false , length = 20)
     @Enumerated(EnumType.STRING)
