@@ -33,5 +33,17 @@ public class Category {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "updated_at", nullable = false)
+    @Builder.Default
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
+    @PreUpdate
+    protected void onUpdate(){
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public Category(Long id, String nameEn) {
+        this.id = id;
+        this.nameEn = nameEn;
+    }
 }
