@@ -24,9 +24,9 @@ public class ProviderService {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "experience_year" , nullable = false)
+    @Column(name = "experience_years" , nullable = false)
     @Min(1)
-    private Integer experienceYear;
+    private Integer experienceYears;
 
     @Column(name = "rate_per_hour" , precision = 10 , scale = 2)
     private BigDecimal ratePerHour;
