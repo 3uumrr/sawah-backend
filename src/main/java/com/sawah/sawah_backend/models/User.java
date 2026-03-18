@@ -53,7 +53,7 @@ public class User {
     @Column(name = "preferred_language")
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    private PreferredLanguage preferredLanguage = PreferredLanguage.AR;
+    private PreferredLanguage preferredLanguage = PreferredLanguage.EN;
 
     @Column(name = "account_status")
     @Enumerated(EnumType.STRING)
@@ -73,7 +73,7 @@ public class User {
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     // Relationships
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE} ,fetch = FetchType.EAGER)
+    @ManyToMany(cascade = {CascadeType.MERGE} ,fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
