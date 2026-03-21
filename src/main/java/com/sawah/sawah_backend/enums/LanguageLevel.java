@@ -1,7 +1,7 @@
 package com.sawah.sawah_backend.enums;
 
 public enum LanguageLevel {
-    NATIVE,
+    BEGINNER,
     INTERMEDIATE,
     FLUENT
 }
