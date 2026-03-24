@@ -11,6 +11,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Builder
 @Entity(name = "languages")
+@Table(name = "languages", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"code"}, name = "uk_languages_code")
+})
 public class Language {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,7 +26,7 @@ public class Language {
     private String nameEn;
 
 
-    @Column(nullable = false, unique = true, length = 10)
+    @Column(nullable = false, length = 10)
     private String code;
 
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -1,8 +1,11 @@
 package com.sawah.sawah_backend.mapper;
 
 import com.sawah.sawah_backend.dto.LanguageInputDto;
+import com.sawah.sawah_backend.dto.ServiceInputDto;
 import com.sawah.sawah_backend.models.Language;
+import com.sawah.sawah_backend.models.Service;
 import org.mapstruct.Mapper;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import java.util.List;
@@ -16,6 +19,6 @@ public interface LanguageMapper {
 
     LanguageInputDto toLanguageDto(Language language);
 
-    List<LanguageInputDto> toListLanguageDto(List<Language> languages);
+    void updateEntityFromDto(LanguageInputDto dto, @MappingTarget Language entity);
 
 }
