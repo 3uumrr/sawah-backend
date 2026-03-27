@@ -13,23 +13,22 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class LanguageServiceImpl implements LanguageService {
 
     private final LanguageRepository languageRepository;
     private final LanguageMapper mapper;
 
     @Override
-    @Transactional(readOnly = true) // تحسين أداء للـ Queries
     public Language getByCode(String code) {
         return languageRepository.findByCode(code)
-                .orElseThrow(() -> new ResourceNotFoundException("Language not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("language.not.found"));
     }
 
     @Override
     public Language getById(Long id) {
         return  languageRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Language not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("language.not.found"));
     }
 
     @Override
@@ -38,28 +37,30 @@ public class LanguageServiceImpl implements LanguageService {
     }
 
     @Override
+    @Transactional
     public void deleteById(Long id) {
         Language language = getById(id);
         languageRepository.delete(language);
     }
 
     @Override
+    @Transactional
     public void addLanguage(LanguageInputDto language) {
         languageRepository.save(mapper.toEntity(language));
     }
 
     @Override
+    @Transactional
     public void updateLanguage(LanguageInputDto language, Long id) {
         Language languageFromDb = getById(id);
 
-        languageFromDb.setCode(language.code());
-        languageFromDb.setNameAr(language.nameAr());
-        languageFromDb.setNameEn(language.nameEn());
+        mapper.updateEntityFromDto(language,languageFromDb);
 
         languageRepository.save(languageFromDb);
     }
 
     @Override
+    @Transactional
     public void initLanguages() {
         if (languageRepository.count() > 0) return;
 
