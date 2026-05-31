@@ -1,1285 +1,855 @@
-<![CDATA[<div align="center">
+# Sawah Backend
 
-# 🏛️ Sawah — Tourism Platform Backend API
+Sawah Backend is a Spring Boot REST API for a tourism platform focused on helping tourists discover places, manage travel preferences, interact with local service providers, and use an AI travel assistant. The codebase is organized as a layered Java backend with JWT security, MySQL persistence, Redis-backed OTP storage, localized English/Arabic messages, and local filesystem image storage.
 
-**A comprehensive backend API powering a bilingual (Arabic/English) tourism platform for Egypt, connecting tourists with local service providers and AI-powered travel assistance.**
+> This README is generated from the current codebase. Where a capability, deployment artifact, or operational detail cannot be proven from code, it is marked as: **Not identifiable from the codebase.**
 
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.14-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
-[![Redis](https://img.shields.io/badge/Redis-Cloud-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
-[![Gemini AI](https://img.shields.io/badge/Gemini%20AI-2.5%20Flash-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
+## Table of Contents
 
-</div>
+- [Project Overview](#project-overview)
+- [Features](#features)
+- [Screenshots and Visual Assets](#screenshots-and-visual-assets)
+- [Technology Stack](#technology-stack)
+- [System Architecture](#system-architecture)
+- [Project Structure](#project-structure)
+- [Database Design](#database-design)
+- [API Documentation](#api-documentation)
+- [Authentication and Security](#authentication-and-security)
+- [Configuration](#configuration)
+- [Installation](#installation)
+- [Docker](#docker)
+- [Testing](#testing)
+- [Logging and Monitoring](#logging-and-monitoring)
+- [External Integrations](#external-integrations)
+- [Design Patterns](#design-patterns)
+- [Performance Considerations](#performance-considerations)
+- [Deployment](#deployment)
+- [Known Issues](#known-issues)
+- [Future Improvements](#future-improvements)
+- [Contributing](#contributing)
+- [License](#license)
 
----
+## Project Overview
 
-## 📋 Table of Contents
+| Item | Details |
+| --- | --- |
+| Project name | Sawah Backend |
+| Maven artifact | `com.sawah:sawah-backend` |
+| Application name | `Sawah Application` |
+| Business problem solved | Provides backend services for a tourism application where tourists can discover places, save interests, manage favorites/visited places, review destinations, browse approved local providers, and use an AI-powered travel chat assistant. |
+| High-level description | A monolithic Spring Boot API with controller, service, repository, entity, mapper, security, configuration, and exception layers. |
+| Main objectives | Authenticate users, manage tourist and provider profiles, expose place discovery APIs, support category/language/service administration, persist chat history, generate AI chat responses, and localize API messages. |
+| Target users | Tourists, service providers, administrators, backend engineers, API consumers, and technical reviewers. |
 
-- [Project Overview](#-project-overview)
-- [Features](#-features)
-- [Technology Stack](#-technology-stack)
-- [System Architecture](#-system-architecture)
-- [Project Structure](#-project-structure)
-- [Database Design](#-database-design)
-- [API Documentation](#-api-documentation)
-- [Authentication & Security](#-authentication--security)
-- [Configuration](#-configuration)
-- [Installation](#-installation)
-- [Testing](#-testing)
-- [Logging & Monitoring](#-logging--monitoring)
-- [External Integrations](#-external-integrations)
-- [Design Patterns](#-design-patterns)
-- [Performance Considerations](#-performance-considerations)
-- [Deployment](#-deployment)
-- [Known Issues](#-known-issues)
-- [Future Improvements](#-future-improvements)
-- [Contributing](#-contributing)
-- [License](#-license)
+## Features
 
----
+### Tourist Features
 
-## 🌍 Project Overview
+- Register and log in with JWT-based authentication.
+- Complete and update tourist profile data with optional profile image upload.
+- Change password and reset forgotten password through email OTP.
+- Switch preferred language between `AR` and `EN`.
+- Browse categories, services, languages, popular places, places by category, places by governorate, and place typeahead suggestions.
+- View place details with photos, prices, review summary, favorite status, and visited status.
+- Save and remove favorite places.
+- Mark and remove visited places.
+- Store and clear recent searches.
+- Add, update, and delete personal place reviews.
+- Save tourism category preferences.
+- Browse approved and available providers by service type.
+- Open AI chat conversations, send messages, read conversation history, rename conversations, and delete conversations.
 
-**Sawah** (سواح — Arabic for "Tourists") is a full-featured tourism platform backend API designed to serve the Egyptian tourism market. The platform bridges the gap between tourists visiting Egypt and local service providers such as tour guides, translators, and drivers.
+### Provider Features
 
-### Business Problem Solved
+- Register as a provider account.
+- Submit provider application with service code, national ID, experience years, rates, language data, optional vehicle data, and national ID images.
+- Complete provider profile with bio, country, phone number, gender, preferred language, and optional profile image.
+- Update provider profile, languages, vehicle details, and profile photo.
+- Toggle provider availability.
+- Log in as a provider. If a provider account is rejected, login returns provider status and rejection reason instead of a token.
 
-Egypt's tourism industry lacks a unified digital platform where tourists can discover places, book local service providers, and receive AI-powered travel guidance — all in a bilingual (Arabic/English) experience. Sawah solves this by providing:
+### Admin Features
 
-- A curated, bilingual database of Egyptian tourist destinations with pricing and ratings
-- A marketplace connecting tourists with verified local service providers (guides, translators, drivers)
-- An AI-powered chatbot (Gemini 2.5 Flash) acting as a virtual tour guide
-- An admin dashboard backend for managing the entire ecosystem
+- Initialize and manage administrator account through startup seeding.
+- List, search, fetch, delete, and activate/deactivate users.
+- Approve and reject provider applications.
+- View provider lists with filters for status, service code, and availability.
+- View provider details including national ID URLs, service data, language data, and driver profile.
+- Create, update, delete, and fetch categories.
+- Create, update, delete, and fetch languages.
+- Create, update, delete, and fetch services.
+- Create and delete places.
+- List all places.
 
-### Main Objectives
+### System Features
 
-1. **Discover** — Enable tourists to browse, search, and explore Egyptian destinations by category, governorate, or popularity
-2. **Connect** — Provide a verified marketplace for booking tour guides, translators, and drivers
-3. **Assist** — Deliver AI-powered travel recommendations via an intelligent chatbot
-4. **Manage** — Give administrators full control over users, providers, places, and platform content
+- Stateless JWT authentication with Spring Security.
+- Role-based method security using `@PreAuthorize`.
+- MySQL persistence through Spring Data JPA and Hibernate.
+- MapStruct mappers for entity-to-DTO conversions.
+- Redis-backed password reset OTP storage with 10-minute TTL.
+- Redis cache configuration with JSON serialization.
+- Async SMTP email sending for password reset codes.
+- Google Gemini chat integration through Spring AI.
+- Hunter.io email verifier client exists, but sign-up verification is commented out in `AuthServiceImpl`.
+- Local filesystem storage for user photos, category icons, place photos, and provider national ID images.
+- Static resource handlers for uploaded image folders.
+- English/Arabic message localization through `Accept-Language`.
+- Swagger/OpenAPI configuration through SpringDoc.
+- Global exception handling with localized error messages.
+- Startup data seeding for roles, admin user, languages, categories, and service types.
 
-### Target Users
+## Screenshots and Visual Assets
 
-| User Type | Description |
-|-----------|-------------|
-| **Tourists** | Domestic and international visitors exploring Egypt |
-| **Service Providers** | Local tour guides, translators, and drivers offering their services |
-| **Administrators** | Platform managers overseeing content, users, and provider approvals |
+No application screenshots are present. The repository contains category icon assets:
 
----
+| Asset | Path |
+| --- | --- |
+| Entertainment icon | `category_icons/Entertainment.png` |
+| Historical icon | `category_icons/Historical.png` |
+| Nature icon | `category_icons/Nature.png` |
+| Religious icon | `category_icons/Religious.png` |
 
-## ✨ Features
+Markdown references:
 
-### 🧳 Tourist Features
+```markdown
+![Entertainment](category_icons/Entertainment.png)
+![Historical](category_icons/Historical.png)
+![Nature](category_icons/Nature.png)
+![Religious](category_icons/Religious.png)
+```
 
-- **User Registration & Authentication** — Sign up, login, and JWT-based session management
-- **Profile Completion** — Multi-step profile setup with photo upload, gender, country, and phone
-- **Place Discovery** — Browse places by category, governorate, popularity, or search with typeahead
-- **Place Details** — View detailed place info including photos, pricing tiers, operating hours, and reviews
-- **Favorite Places** — Save and manage a personal list of favorite destinations
-- **Visited Places** — Track and manage visited destinations
-- **Recent Searches** — Automatic tracking and management of recent place searches
-- **Reviews & Ratings** — Write, update, and delete reviews for places (1–5 stars)
-- **User Preferences** — Select preferred tourism categories for personalized experience
-- **Provider Browsing** — Browse available service providers filtered by service type, sorted by rating or price
-- **AI Chat Assistant** — Converse with an AI-powered virtual tour guide (Gemini 2.5 Flash) with conversation history
-- **Password Reset** — Secure OTP-based password reset via email with Redis-backed code expiration
-- **Bilingual Support** — Full Arabic and English localization via `Accept-Language` header
+Uploaded runtime image folders also exist or are created by the application:
 
-### 🏢 Service Provider Features
+- `user_photos/`
+- `category_icons/`
+- `place_photos/`
+- `providers/national-ids/`
 
-- **Provider Registration** — Submit application with national ID verification (front & back photos)
-- **Profile Management** — Set bio, experience years, hourly/daily rates, and languages spoken
-- **Driver Profile** — Additional vehicle details (type, model, capacity) for driver providers
-- **Availability Toggle** — Toggle availability status on/off
-- **Service Types** — Register as a Guide, Translator, or Driver
-- **Language Proficiency** — Specify spoken languages with proficiency levels (Beginner, Intermediate, Fluent)
-
-### 🔧 Admin Features
-
-- **User Management** — View all users, search by email/role, activate/deactivate accounts, delete users
-- **Provider Approval Workflow** — Review, approve, or reject provider applications with rejection reasons
-- **Place Management** — Create places with multilingual content, multiple photos, and tiered pricing
-- **Category Management** — CRUD operations on place categories with icon upload
-- **Service Management** — CRUD operations on service types offered on the platform
-- **Language Management** — CRUD operations on supported languages
-- **Dashboard Data** — Paginated views of providers filtered by status, service code, and availability
-
-### ⚙️ System Features
-
-- **JWT Authentication** — Stateless token-based auth with role-based access control
-- **Redis Caching** — Cloud Redis for cache and OTP storage with configurable TTL
-- **Email Service** — Async SMTP email delivery for password reset OTPs
-- **Email Verification** — Hunter.io API integration for validating email existence at sign-up
-- **File Storage** — Local filesystem-based image storage for user photos, category icons, place photos, and national IDs
-- **Internationalization (i18n)** — Full message localization for English and Arabic with `Accept-Language` header resolution
-- **OpenAPI Documentation** — Swagger UI auto-generated API docs
-- **Input Validation** — Bean Validation (Jakarta) with localized error messages
-- **Global Exception Handling** — Centralized error handling with localized responses
-- **Data Initialization** — Automatic seeding of roles, admin user, languages, categories, and services on startup
-- **CORS Configuration** — Configurable cross-origin settings
-- **Pagination** — Spring Data paginated responses with configurable max page size (100)
-
----
-
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Category | Technology |
-|----------|------------|
-| **Language** | Java 17 |
-| **Framework** | Spring Boot 3.5.14 |
-| **Database** | MySQL 8.x |
-| **ORM** | Spring Data JPA / Hibernate |
-| **Caching** | Redis (Cloud — Redis Labs) |
-| **Security** | Spring Security 6, JWT (jjwt 0.11.5), BCrypt |
-| **AI Integration** | Spring AI 1.1.5 + Google Gemini 2.5 Flash |
-| **API Documentation** | SpringDoc OpenAPI 2.8.5 (Swagger UI) |
-| **Email** | Spring Boot Starter Mail (SMTP) |
-| **Email Validation** | Hunter.io Email Verifier API |
-| **HTTP Client** | Spring WebFlux (WebClient) |
-| **Object Mapping** | MapStruct 1.5.5.Final |
-| **Boilerplate Reduction** | Lombok 1.18.30 |
-| **Validation** | Jakarta Bean Validation |
-| **Build Tool** | Maven (with Maven Wrapper) |
-| **Containerization** | Not identifiable from the codebase |
-| **CI/CD** | Not identifiable from the codebase |
-| **Cloud** | Redis Labs (Redis Cloud), Ngrok (tunnel) |
+| --- | --- |
+| Language | Java 17 |
+| Framework | Spring Boot 3.5.14 |
+| Database | MySQL via `mysql-connector-j` |
+| ORM | Spring Data JPA / Hibernate |
+| Security | Spring Security, JWT with `jjwt` 0.11.5, BCrypt |
+| Documentation | SpringDoc OpenAPI 2.8.5 / Swagger UI |
+| Testing | `spring-boot-starter-test` dependency exists; no tests found |
+| Build Tool | Maven with Maven Wrapper |
+| Containerization | Not identifiable from the codebase. |
+| CI/CD | Not identifiable from the codebase. `.github` exists, but no workflow files were found. |
+| Cloud | Redis Cloud endpoint is configured in `application.properties`; no cloud deployment configuration found. |
 
 ### Spring Boot Starters
 
 | Starter | Purpose |
-|---------|---------|
-| `spring-boot-starter-web` | REST API, embedded Tomcat |
-| `spring-boot-starter-data-jpa` | JPA/Hibernate ORM |
-| `spring-boot-starter-security` | Authentication & authorization |
+| --- | --- |
+| `spring-boot-starter-web` | REST API and embedded servlet runtime |
+| `spring-boot-starter-data-jpa` | JPA repositories and Hibernate ORM |
+| `spring-boot-starter-security` | Authentication and authorization |
 | `spring-boot-starter-validation` | Jakarta Bean Validation |
-| `spring-boot-starter-mail` | SMTP email sending |
-| `spring-boot-starter-data-redis` | Redis cache & data store |
-| `spring-boot-starter-webflux` | Reactive WebClient for external API calls |
-| `spring-boot-starter-test` | Testing framework |
-| `spring-ai-starter-model-google-genai` | Google Gemini AI integration |
+| `spring-boot-starter-mail` | SMTP email delivery |
+| `spring-boot-starter-data-redis` | Redis cache and Redis template support |
+| `spring-boot-starter-webflux` | `WebClient` for external HTTP calls |
+| `spring-boot-starter-test` | JUnit, Mockito, Spring Test, AssertJ |
+| `spring-ai-starter-model-google-genai` | Google Gemini integration through Spring AI |
 
----
+### Maven Dependencies
 
-## 🏗️ System Architecture
+| Dependency | Purpose |
+| --- | --- |
+| `mysql-connector-j` | MySQL JDBC driver |
+| `lombok` | Boilerplate reduction |
+| `jjwt-api`, `jjwt-impl`, `jjwt-jackson` | JWT creation and validation |
+| `mapstruct`, `mapstruct-processor` | Compile-time mapping |
+| `springdoc-openapi-starter-webmvc-ui` | Swagger UI and OpenAPI generation |
+| `spring-ai-bom` | Spring AI dependency management |
 
-Sawah follows a **layered (N-tier) architecture** with clear separation of concerns. The application is built as a monolithic Spring Boot REST API with the following layers:
+## System Architecture
 
-| Layer | Responsibility |
-|-------|---------------|
-| **Controller** | HTTP request handling, input validation, response formatting |
-| **Service** | Business logic, transaction management, orchestration |
-| **Repository** | Data access via Spring Data JPA |
-| **Model/Entity** | Domain objects mapped to database tables |
-| **DTO/Request/Response** | Data transfer objects for API contracts |
-| **Mapper** | MapStruct-based entity ↔ DTO conversion |
-| **Security** | JWT filter chain, user details, authentication |
-| **Config** | Application-wide configuration beans |
-| **Exception** | Centralized error handling with i18n |
+The application follows a layered monolithic architecture:
+
+- **Controller layer**: HTTP endpoints, request validation, authentication principal access, localized response messages.
+- **Service layer**: Business rules, orchestration, file storage, Redis OTP handling, AI calls, and entity updates.
+- **Repository layer**: Spring Data JPA repositories and custom JPQL/native queries.
+- **Model layer**: JPA entities mapped to MySQL tables.
+- **DTO/request/response layer**: API contracts separated from persistence models.
+- **Mapper layer**: MapStruct interfaces and custom mapping helpers.
+- **Security layer**: JWT parsing, token generation, user-details loading, Spring Security filter chain.
+- **Configuration layer**: CORS, OpenAPI, locale resolution, pageable constraints, Redis, resource handlers, async execution.
+- **Exception layer**: Centralized `@RestControllerAdvice`.
 
 ```mermaid
 flowchart TD
-    subgraph Client["Client Layer"]
-        A["Mobile App / Web Client"]
-    end
-
-    subgraph API["API Gateway Layer"]
-        B["REST Controllers"]
-        C["AuthTokenFilter (JWT)"]
-        D["GlobalExceptionHandler"]
-    end
-
-    subgraph Business["Business Logic Layer"]
-        E["Service Interfaces"]
-        F["Service Implementations"]
-        G["MapStruct Mappers"]
-    end
-
-    subgraph Data["Data Access Layer"]
-        H["JPA Repositories"]
-        I["Entity Models"]
-    end
-
-    subgraph External["External Services"]
-        J["Google Gemini AI"]
-        K["SMTP Mail Server"]
-        L["Hunter.io Email API"]
-        M["Redis Cloud"]
-    end
-
-    subgraph Storage["Storage Layer"]
-        N["MySQL Database"]
-        O["Local File System"]
-    end
-
-    A -->|"HTTP/HTTPS"| C
-    C -->|"Authenticate"| B
-    B --> D
-    B --> E
-    E --> F
-    F --> G
-    F --> H
-    H --> I
-    I --> N
-    F -->|"AI Chat"| J
-    F -->|"Send Email"| K
-    F -->|"Verify Email"| L
-    F -->|"OTP Cache"| M
-    F -->|"Store Files"| O
-
-    style Client fill:#E3F2FD,stroke:#1565C0
-    style API fill:#FFF3E0,stroke:#E65100
-    style Business fill:#E8F5E9,stroke:#2E7D32
-    style Data fill:#F3E5F5,stroke:#6A1B9A
-    style External fill:#FFF8E1,stroke:#F9A825
-    style Storage fill:#FCE4EC,stroke:#C62828
+    Client["Mobile/Web Client"] --> Security["AuthTokenFilter"]
+    Security --> Controllers["REST Controllers"]
+    Controllers --> Services["Service Interfaces and Implementations"]
+    Services --> Mappers["MapStruct Mappers"]
+    Services --> Repositories["Spring Data JPA Repositories"]
+    Repositories --> Entities["JPA Entities"]
+    Entities --> MySQL["MySQL Database"]
+    Services --> Redis["Redis OTP and Cache"]
+    Services --> Mail["SMTP Mail Server"]
+    Services --> Gemini["Google Gemini via Spring AI"]
+    Services --> Hunter["Hunter.io Email Verifier Client"]
+    Services --> Files["Local File Storage"]
+    Controllers --> Exceptions["GlobalExceptionHandler"]
 ```
 
----
-
-## 📁 Project Structure
+## Project Structure
 
 ```text
 sawah-backend/
-├── .github/                          # GitHub configuration
-├── .mvn/                             # Maven Wrapper files
-├── category_icons/                   # Uploaded category icon images
-├── place_photos/                     # Uploaded place photo images
-├── providers/                        # Provider national ID documents
-├── user_photos/                      # Uploaded user profile photos
-├── src/
-│   ├── main/
-│   │   ├── java/com/sawah/sawah_backend/
-│   │   │   ├── SawahApplication.java         # Application entry point
-│   │   │   ├── config/                       # Configuration classes
-│   │   │   │   ├── AppConfig.java            # CORS, OpenAPI, Locale, PasswordEncoder, Pageable
-│   │   │   │   ├── DataInitializer.java      # Startup data seeding (roles, admin, etc.)
-│   │   │   │   ├── RedisConfig.java          # Redis cache configuration
-│   │   │   │   ├── SecurityConfig.java       # Spring Security filter chain
-│   │   │   │   └── WebConfig.java            # Static resource handlers
-│   │   │   ├── controller/                   # REST API controllers (13 controllers)
-│   │   │   │   ├── AuthController.java       # Login, sign-up, password reset
-│   │   │   │   ├── CategoryController.java   # Category CRUD
-│   │   │   │   ├── ChatController.java       # AI chat conversations & messages
-│   │   │   │   ├── FavoritePlaceController.java  # Favorite place management
-│   │   │   │   ├── LanguageController.java   # Language CRUD
-│   │   │   │   ├── PlaceController.java      # Place discovery & management
-│   │   │   │   ├── ProviderController.java   # Provider registration & management
-│   │   │   │   ├── RecentSearchController.java   # Recent search tracking
-│   │   │   │   ├── ReviewController.java     # Place review CRUD
-│   │   │   │   ├── ServicesController.java   # Service type CRUD
-│   │   │   │   ├── UserController.java       # User profile & admin management
-│   │   │   │   ├── UserPreferencesController.java  # User interest preferences
-│   │   │   │   └── VisitedPlaceController.java     # Visited place tracking
-│   │   │   ├── dto/                          # Data Transfer Objects (16 sub-packages)
-│   │   │   ├── enums/                        # Enum types (14 enums)
-│   │   │   ├── exceptions/                   # Custom exceptions & global handler
-│   │   │   ├── helper/                       # Utility classes (email verification, OTP)
-│   │   │   ├── mapper/                       # MapStruct mappers (15 mappers)
-│   │   │   ├── models/                       # JPA entity models (21 entities)
-│   │   │   ├── repository/                   # Spring Data JPA repositories (20 repos)
-│   │   │   ├── requests/                     # Request body DTOs
-│   │   │   ├── response/                     # API response wrappers
-│   │   │   ├── security/                     # Security components
-│   │   │   │   ├── jwt/                      # JWT utilities & token filter
-│   │   │   │   └── user/                     # UserDetails implementation
-│   │   │   └── service/                      # Business logic services (23 sub-packages)
-│   │   └── resources/
-│   │       ├── application.properties        # Application configuration
-│   │       └── i18n/                         # Internationalization messages
-│   │           ├── messages.properties       # English messages
-│   │           └── messages_ar.properties    # Arabic messages
-│   └── test/                                 # Test directory (empty)
-├── pom.xml                                   # Maven build configuration
-├── mvnw / mvnw.cmd                           # Maven Wrapper scripts
-└── README.md                                 # This file
+|-- .github/                         # Modernization/tool hook folders; no CI workflow detected
+|-- .mvn/                            # Maven Wrapper support
+|-- category_icons/                  # Category icon image assets
+|-- place_photos/                    # Runtime uploaded place images
+|-- providers/                       # Runtime provider document storage
+|-- user_photos/                     # Runtime uploaded user profile images
+|-- src/
+|   |-- main/
+|   |   |-- java/com/sawah/sawah_backend/
+|   |   |   |-- SawahApplication.java
+|   |   |   |-- config/              # App, security, Redis, static resources, data initialization
+|   |   |   |-- controller/          # REST API controllers
+|   |   |   |-- dto/                 # Request/response DTO packages
+|   |   |   |-- enums/               # Domain enums
+|   |   |   |-- exceptions/          # Custom exceptions and global handler
+|   |   |   |-- helper/              # OTP and external email validation helper
+|   |   |   |-- mapper/              # MapStruct mappers
+|   |   |   |-- models/              # JPA entities
+|   |   |   |-- repository/          # Spring Data repositories
+|   |   |   |-- requests/            # Request record objects
+|   |   |   |-- response/            # Standard response wrappers
+|   |   |   |-- security/            # JWT and UserDetails classes
+|   |   |   `-- service/             # Business services by domain
+|   |   `-- resources/
+|   |       |-- application.properties
+|   |       `-- i18n/                # English and Arabic message bundles
+|   `-- test/                        # No test files found
+|-- HELP.md
+|-- mvnw
+|-- mvnw.cmd
+|-- pom.xml
+`-- README.md
 ```
 
-### Package Descriptions
+### Important Packages
 
-| Package | Description |
-|---------|-------------|
-| `config` | Application-wide beans: security filter chain, CORS, Redis, OpenAPI, locale, data seeding |
-| `controller` | 13 REST controllers handling all API endpoints with validation and i18n |
-| `dto` | 16 sub-packages of Data Transfer Objects organized by domain entity |
-| `enums` | 14 enums defining roles, statuses, genders, vehicle types, languages, service codes |
-| `exceptions` | 9 custom exception classes + `GlobalExceptionHandler` with localized error responses |
-| `helper` | Utility services: email verification via Hunter.io, OTP generation |
-| `mapper` | 15 MapStruct interfaces for entity ↔ DTO mapping |
-| `models` | 21 JPA entities representing the database schema |
-| `repository` | 20 Spring Data JPA repositories with custom query methods |
-| `requests` | Request body DTOs (login, registration, chat, etc.) |
-| `response` | Standardized `ApiResponse<T>` and `AuthResponse` wrappers |
-| `security` | JWT token utilities, `AuthTokenFilter`, `CustomUserDetails/Service` |
-| `service` | 23 sub-packages with interface + implementation pairs for all business logic |
+| Package | Responsibility |
+| --- | --- |
+| `config` | CORS, security filter chain, Redis cache settings, OpenAPI metadata, locale resolver, data initialization, static files |
+| `controller` | Public and secured REST endpoints |
+| `dto` | Domain-specific API response/input shapes |
+| `enums` | Roles, statuses, vehicle types, language levels, visitor categories/nationalities |
+| `exceptions` | Domain exceptions and `GlobalExceptionHandler` |
+| `helper` | OTP generation and Hunter.io email validation client |
+| `mapper` | MapStruct conversion between entities and DTOs |
+| `models` | Database entities |
+| `repository` | JPA persistence contracts |
+| `requests` | Request records not grouped under `dto` |
+| `response` | `ApiResponse<T>` and `AuthResponse` |
+| `security` | JWT utilities, token filter, custom user principal |
+| `service` | Business logic interfaces and implementations |
 
----
+## Database Design
 
-## 🗃️ Database Design
+The application uses MySQL with Hibernate configured as:
 
-The application uses **MySQL** with **Hibernate DDL auto-update** mode. The schema consists of **17 primary tables** with well-defined relationships, indexes, and constraints.
+```properties
+spring.jpa.hibernate.ddl-auto=update
+```
 
-### Entities Summary
+### Entities and Tables
 
-| Entity | Table | Description |
-|--------|-------|-------------|
-| `User` | `users` | Platform users (tourists, providers, admins) |
-| `Role` | `roles` | Authorization roles (TOURIST, PROVIDER, ADMIN) |
-| `Provider` | `providers` | Service provider profiles linked to users |
-| `DriverProfile` | `driver_profile` | Vehicle details for driver-type providers |
-| `Service` | `services` | Service types (GUIDE, TRANSLATOR, DRIVER) |
-| `ServiceRequest` | `service_requests` | Tourist-to-provider booking requests |
-| `ProviderLanguage` | `provider_languages` | Languages spoken by providers with proficiency |
-| `ProviderReview` | `provider_reviews` | Tourist reviews of providers |
-| `Language` | `languages` | Available languages in the system |
-| `Place` | `places` | Tourist destinations with bilingual data |
-| `PlacePhoto` | `place_photos` | Multiple photos per place |
-| `PlacePrice` | `place_prices` | Tiered pricing by visitor category & nationality |
-| `Category` | `categories` | Place categories (e.g., Temples, Beaches) |
-| `Review` | `reviews` | Tourist reviews of places (1–5 stars) |
-| `FavoritePlace` | `favorite_places` | User-place favorite bookmarks |
-| `VisitedPlace` | `visited_places` | User-place visit tracking |
-| `RecentSearch` | `recent_searches` | User search history |
-| `UserPreference` | `user_preferences` | User category interest preferences |
-| `ChatConversation` | `chat_conversations` | AI chat conversation sessions |
-| `ChatMessage` | `chat_messages` | Individual messages within conversations |
+| Entity | Table | Purpose |
+| --- | --- | --- |
+| `User` | `users` | Platform account data, profile data, status, preferred language |
+| `Role` | `roles` | `TOURIST`, `ADMIN`, `PROVIDER` role records |
+| `Provider` | `providers` | Provider application/profile data and approval status |
+| `DriverProfile` | `driver_profile` | Vehicle details for driver providers |
+| `Service` | `services` | Service types: `GUIDE`, `TRANSLATOR`, `DRIVER` |
+| `ServiceRequest` | `service_requests` | Booking/request domain model; no controller found |
+| `ProviderLanguage` | `provider_languages` | Provider language capabilities |
+| `ProviderReview` | `provider_reviews` | Reviews for providers tied to service requests |
+| `Language` | `languages` | Supported languages |
+| `Category` | `categories` | Tourism place categories |
+| `Place` | `places` | Tourism destinations |
+| `PlacePhoto` | `place_photos` | Additional place images |
+| `PlacePrice` | `place_prices` | Place prices by visitor category/nationality |
+| `Review` | `reviews` | Tourist reviews for places |
+| `FavoritePlace` | `favorite_places` | User favorite places |
+| `VisitedPlace` | `visited_places` | User visited places |
+| `RecentSearch` | `recent_searches` | Recent place searches |
+| `ChatConversation` | `chat_conversations` | AI chat conversation metadata |
+| `ChatMessage` | `chat_messages` | AI/user chat messages |
+| `UserPreference` | `user_preferences` | User category preferences |
+| `UserPreferenceId` | embedded key | Composite key for preferences |
 
-### Entity-Relationship Diagram
+### Notable Constraints and Indexes
+
+- `users.email` unique index.
+- `users.phone_number` unique index.
+- `roles.name` unique.
+- `services.service_code` unique.
+- `languages.code` unique.
+- `places.name_en` and `places.name_ar` unique indexes.
+- `providers.national_id` unique index.
+- Unique user/place pairs for favorite places, visited places, and reviews.
+- Unique provider/language pair in `provider_languages`.
+- Unique place/category/nationality pricing combination in `place_prices`.
+- Unique service request per provider review.
+
+### ER Diagram
 
 ```mermaid
 erDiagram
-    USER ||--o{ USER_ROLES : "has"
-    ROLE ||--o{ USER_ROLES : "assigned to"
-    USER ||--o| PROVIDER : "registers as"
-    PROVIDER ||--o| DRIVER_PROFILE : "has"
-    PROVIDER }o--|| SERVICE : "provides"
-    PROVIDER ||--o{ PROVIDER_LANGUAGE : "speaks"
-    LANGUAGE ||--o{ PROVIDER_LANGUAGE : "spoken by"
-    PROVIDER ||--o{ PROVIDER_REVIEW : "reviewed"
-    USER ||--o{ PROVIDER_REVIEW : "writes"
-    SERVICE_REQUEST ||--|| PROVIDER_REVIEW : "reviewed via"
-    USER ||--o{ SERVICE_REQUEST : "creates"
-    PROVIDER ||--o{ SERVICE_REQUEST : "receives"
-    PLACE ||--o{ SERVICE_REQUEST : "for"
-    SERVICE ||--o{ SERVICE_REQUEST : "type"
-    PLACE }o--|| CATEGORY : "belongs to"
-    PLACE ||--o{ PLACE_PHOTO : "has"
-    PLACE ||--o{ PLACE_PRICE : "has"
-    PLACE ||--o{ REVIEW : "receives"
-    USER ||--o{ REVIEW : "writes"
-    USER ||--o{ FAVORITE_PLACE : "favorites"
-    PLACE ||--o{ FAVORITE_PLACE : "favorited by"
-    USER ||--o{ VISITED_PLACE : "visits"
-    PLACE ||--o{ VISITED_PLACE : "visited by"
-    USER ||--o{ RECENT_SEARCH : "searches"
-    PLACE ||--o{ RECENT_SEARCH : "searched"
-    USER ||--o{ USER_PREFERENCE : "prefers"
-    CATEGORY ||--o{ USER_PREFERENCE : "preferred by"
-    USER ||--o{ CHAT_CONVERSATION : "owns"
-    CHAT_CONVERSATION ||--o{ CHAT_MESSAGE : "contains"
-
-    USER {
-        Long id PK
-        String firstName
-        String lastName
-        String email UK
-        String password
-        String country
-        String phoneNumber UK
-        Gender gender
-        String profilePictureUrl
-        PreferredLanguage preferredLanguage
-        UserAccStatus accountStatus
-        Boolean isProfileComplete
-        LocalDateTime createdAt
-        LocalDateTime updatedAt
-    }
-
-    ROLE {
-        Long id PK
-        RoleName name UK
-        LocalDateTime createdAt
-    }
-
-    PROVIDER {
-        Long id PK
-        String bio
-        String nationalId UK
-        String nationalIdFrontUrl
-        String nationalIdBackUrl
-        Integer experienceYears
-        BigDecimal ratePerHour
-        BigDecimal ratePerDay
-        Boolean isAvailable
-        ProviderStatus accountStatus
-        BigDecimal averageRating
-        Integer totalReviews
-        Integer totalBookings
-        Integer completedBookings
-        Long userId FK
-        Long serviceId FK
-    }
-
-    DRIVER_PROFILE {
-        Long id PK
-        VehicleType vehicleType
-        String vehicleModel
-        Integer vehicleCapacity
-        Long providerId FK
-    }
-
-    SERVICE {
-        Long id PK
-        ServiceCode code UK
-        String nameAr
-        String nameEn
-    }
-
-    PLACE {
-        Long id PK
-        String nameAr UK
-        String nameEn UK
-        String governorateAr
-        String governorateEn
-        String descriptionAr
-        String descriptionEn
-        LocalTime openTime
-        LocalTime closeTime
-        BigDecimal longitude
-        BigDecimal latitude
-        BigDecimal rating
-        Integer totalReviews
-        String mainImageUrl
-        String bookingUrl
-        Long categoryId FK
-    }
-
-    CATEGORY {
-        Long id PK
-        String nameAr
-        String nameEn
-        String iconUrl
-        Integer displayOrder
-    }
-
-    REVIEW {
-        Long id PK
-        Integer stars
-        String content
-        Long placeId FK
-        Long userId FK
-    }
-
-    CHAT_CONVERSATION {
-        Long id PK
-        String chatTitle
-        Long userId FK
-        LocalDateTime createdAt
-        LocalDateTime updatedAt
-    }
-
-    CHAT_MESSAGE {
-        Long id PK
-        ChatSender sender
-        String message
-        Long conversationId FK
-        LocalDateTime createdAt
-    }
+    USER }o--o{ ROLE : has
+    USER ||--o| PROVIDER : owns
+    SERVICE ||--o{ PROVIDER : classifies
+    PROVIDER ||--o| DRIVER_PROFILE : may_have
+    PROVIDER ||--o{ PROVIDER_LANGUAGE : speaks
+    LANGUAGE ||--o{ PROVIDER_LANGUAGE : used_by
+    CATEGORY ||--o{ PLACE : groups
+    PLACE ||--o{ PLACE_PHOTO : has
+    PLACE ||--o{ PLACE_PRICE : has
+    USER ||--o{ REVIEW : writes
+    PLACE ||--o{ REVIEW : receives
+    USER ||--o{ FAVORITE_PLACE : saves
+    PLACE ||--o{ FAVORITE_PLACE : saved_as
+    USER ||--o{ VISITED_PLACE : marks
+    PLACE ||--o{ VISITED_PLACE : visited_as
+    USER ||--o{ RECENT_SEARCH : searches
+    PLACE ||--o{ RECENT_SEARCH : appears_in
+    USER ||--o{ USER_PREFERENCE : selects
+    CATEGORY ||--o{ USER_PREFERENCE : preferred
+    USER ||--o{ CHAT_CONVERSATION : owns
+    CHAT_CONVERSATION ||--o{ CHAT_MESSAGE : contains
+    USER ||--o{ SERVICE_REQUEST : requests
+    PLACE ||--o{ SERVICE_REQUEST : requested_for
+    PROVIDER ||--o{ SERVICE_REQUEST : receives
+    SERVICE ||--o{ SERVICE_REQUEST : type
+    SERVICE_REQUEST ||--o| PROVIDER_REVIEW : reviewed_by
+    PROVIDER ||--o{ PROVIDER_REVIEW : receives
+    USER ||--o{ PROVIDER_REVIEW : writes
 ```
 
-### Key Database Constraints
+## API Documentation
 
-- **Unique Constraints**: `user.email`, `user.phone_number`, `provider.national_id`, `place.name_en`, `place.name_ar`, `language.code`, `service.service_code`
-- **Composite Unique**: `review(place_id, user_id)`, `favorite_place(user_id, place_id)`, `visited_place(user_id, place_id)`, `provider_language(provider_id, language_id)`
-- **Cascade Deletes**: Reviews, favorites, visited places, recent searches, chat conversations, and chat messages cascade on user/place deletion
-- **Indexes**: `idx_user_email`, `idx_user_phone`, `idx_provider_nationalId`, `uq_places_name_en`, `uq_places_name_ar`
+Base URL:
 
----
+```text
+http://localhost:9091/api/v1
+```
 
-## 📡 API Documentation
+Swagger UI:
 
-> **Base URL**: `http://localhost:9091/api/v1`
->
-> **Swagger UI**: `http://localhost:9091/swagger-ui.html`
+```text
+http://localhost:9091/swagger-ui.html
+```
 
-### Authentication Endpoints
+### Standard Response Wrapper
 
-| Method | Path | Description | Auth | Role |
-|--------|------|-------------|------|------|
-| `POST` | `/auth/login` | Authenticate user and receive JWT | ❌ | Any |
-| `POST` | `/auth/sign-up` | Register new tourist account | ❌ | Any |
-| `POST` | `/auth/provider/sign-up` | Register new provider account | ❌ | Any |
-| `POST` | `/auth/forgot-password` | Initiate OTP-based password reset | ❌ | Any |
-| `POST` | `/auth/reset-password` | Reset password using OTP code | ❌ | Any |
+Most endpoints return:
 
-<details>
-<summary><strong>📝 Auth API Details</strong></summary>
-
-#### `POST /auth/login`
-
-**Request Body:**
 ```json
 {
-  "email": "user@example.com",
-  "password": "securepassword"
+  "message": "Operation successful",
+  "data": {},
+  "timestamp": "2026-06-01T00:00:00"
 }
 ```
 
-**Response (200):**
+Authentication endpoints use `AuthResponse` for login:
+
 ```json
 {
   "message": "Logged in successfully.",
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "token": "jwt-token",
   "isProfileComplete": true,
   "roles": ["ROLE_TOURIST"],
-  "timestamp": "2026-05-31T20:00:00",
+  "timestamp": "2026-06-01T00:00:00",
   "providerStatus": null,
   "rejectionReason": null
 }
 ```
 
-#### `POST /auth/sign-up`
+### Authentication Endpoints
 
-**Request Body:**
-```json
-{
-  "firstName": "John",
-  "lastName": "Doe",
-  "email": "john@example.com",
-  "password": "securepassword123"
-}
-```
-
-**Response (201):**
-```json
-{
-  "message": "User added successfully to the system",
-  "data": null,
-  "timestamp": "2026-05-31T20:00:00"
-}
-```
-
-#### `POST /auth/forgot-password`
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com"
-}
-```
-
-#### `POST /auth/reset-password`
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "otp": "123456",
-  "newPassword": "newSecurePassword"
-}
-```
-
-</details>
-
----
+| Method | Path | Description | Request Parameters | Request Body | Response Body | Status Codes | Auth |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `POST` | `/auth/login` | Authenticate user and issue JWT. Rejected providers receive status/reason and no token. | None | `LoginRequest { email, password }` | `AuthResponse` | `200`, `400`, `401`, `403` | Public |
+| `POST` | `/auth/sign-up` | Register tourist user. | None | `UserInputDto { firstName, lastName, email, password }` | `ApiResponse<Void>` | `201`, `400`, `409` | Public |
+| `POST` | `/auth/provider/sign-up` | Register provider account user. | None | `UserInputDto { firstName, lastName, email, password }` | `ApiResponse<Void>` | `201`, `400`, `409` | Public |
+| `POST` | `/auth/forgot-password` | Generate OTP, send email, and store OTP in Redis for 10 minutes. | None | `{ "email": "user@example.com" }` | `ApiResponse<Void>` | `200`, `404`, `500` | Public |
+| `POST` | `/auth/reset-password` | Reset password using email and OTP. | None | `ResetPasswordRequest { email, otp, newPassword }` | `ApiResponse<Void>` | `200`, `400`, `404` | Public |
 
 ### User Endpoints
 
-| Method | Path | Description | Auth | Role |
-|--------|------|-------------|------|------|
-| `GET` | `/users` | Get all users (paginated) | ✅ | ADMIN |
-| `GET` | `/users/{id}` | Get user by ID | ✅ | ADMIN |
-| `GET` | `/users/search?role=&email=` | Search users by role or email | ✅ | ADMIN |
-| `GET` | `/users/me` | Get current user profile | ✅ | TOURIST |
-| `PUT` | `/users/me` | Update current user profile (multipart) | ✅ | TOURIST, PROVIDER |
-| `PUT` | `/users/complete-profile` | Complete tourist profile (multipart) | ✅ | TOURIST |
-| `PATCH` | `/users/change-password` | Change password | ✅ | TOURIST, PROVIDER |
-| `PATCH` | `/users/preferred-language` | Toggle preferred language (EN/AR) | ✅ | Any authenticated |
-| `PATCH` | `/users/{id}/account-status` | Toggle user account active/inactive | ✅ | ADMIN |
-| `DELETE` | `/users/{id}` | Delete user by ID | ✅ | ADMIN |
-| `DELETE` | `/users/me` | Delete own account | ✅ | Any authenticated |
-
----
-
-### Place Endpoints
-
-| Method | Path | Description | Auth | Role |
-|--------|------|-------------|------|------|
-| `GET` | `/places` | Get all places (paginated) | ✅ | ADMIN |
-| `GET` | `/places/{placeId}` | Get place with full details | ✅ | Any authenticated |
-| `GET` | `/places/category/{categoryId}` | Filter places by category | ✅ | Any authenticated |
-| `GET` | `/places/governorate?name=` | Filter places by governorate | ✅ | Any authenticated |
-| `GET` | `/places/popular` | Get places sorted by rating | ✅ | Any authenticated |
-| `GET` | `/places/favorites` | Get user's favorite places | ✅ | TOURIST |
-| `GET` | `/places/visited` | Get user's visited places | ✅ | TOURIST |
-| `GET` | `/places/recent-searches` | Get user's recent searches | ✅ | TOURIST |
-| `GET` | `/places/typeahead?q=` | Typeahead/autocomplete search | ✅ | Any authenticated |
-| `POST` | `/places` | Create new place (multipart) | ✅ | ADMIN |
-| `DELETE` | `/places/{id}` | Delete a place | ✅ | ADMIN |
-
----
+| Method | Path | Description | Request Parameters | Request Body | Response Body | Status Codes | Auth |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `GET` | `/users` | List all users. | Pageable | None | `ApiResponse<Page<UserAdminResponseDto>>` | `200`, `403` | `ADMIN` |
+| `GET` | `/users/{id}` | Fetch user by ID. | `id` path | None | `ApiResponse<UserAdminResponseDto>` | `200`, `403`, `404` | `ADMIN` |
+| `GET` | `/users/search` | Search user by `email` or by `role`. | `email`, `role`, pageable | None | `ApiResponse<Page<UserAdminResponseDto>>` | `200`, `400`, `403`, `404` | `ADMIN` |
+| `DELETE` | `/users/{id}` | Delete user by admin. | `id` path | None | `ApiResponse<Void>` | `200`, `403`, `404` | `ADMIN` |
+| `DELETE` | `/users/me` | Delete current account. | None | None | `ApiResponse<Void>` | `200`, `401`, `404` | Authenticated |
+| `PATCH` | `/users/{id}/account-status` | Toggle user active/inactive status. | `id` path | None | `ApiResponse<Void>` | `200`, `403`, `404` | `ADMIN` |
+| `PUT` | `/users/me` | Update current user profile and optional image. | Multipart parts: `updateUserDto`, optional `image` | `UpdateUserDto { name, email, country, phoneNumber, gender }` | `ApiResponse<Void>` | `200`, `400`, `401` | `TOURIST` or `PROVIDER` |
+| `PATCH` | `/users/change-password` | Change current user password. | None | `ChangePasswordRequest { oldPassword, newPassword }` | `ApiResponse<Void>` | `200`, `400`, `401` | `TOURIST` or `PROVIDER` |
+| `GET` | `/users/me` | Fetch current tourist profile. | None | None | `ApiResponse<UserResponseDto>` | `200`, `401`, `403` | `TOURIST` |
+| `PATCH` | `/users/preferred-language` | Toggle current user's preferred language. | None | None | `ApiResponse<Void>` | `200`, `401` | Authenticated |
+| `PUT` | `/users/complete-profile` | Complete tourist profile. | Multipart parts: `user`, optional `image` | `CompleteTouristProfileDto { country, phoneNumber, gender, preferredLanguage }` | `ApiResponse<Void>` | `200`, `400`, `401`, `403` | `TOURIST` |
 
 ### Provider Endpoints
 
-| Method | Path | Description | Auth | Role |
-|--------|------|-------------|------|------|
-| `GET` | `/providers` | Get providers for tourists (filtered & sorted) | ✅ | Any authenticated |
-| `GET` | `/providers/{providerId}` | Get provider with full details | ✅ | Any authenticated |
-| `GET` | `/providers/{providerId}/reviews` | Get provider reviews (paginated) | ✅ | Any authenticated |
-| `GET` | `/providers/admin` | Get all providers for admin (filtered) | ✅ | ADMIN |
-| `GET` | `/providers/admin/{providerId}` | Get provider detail for admin | ✅ | ADMIN |
-| `POST` | `/providers/register` | Submit provider application (multipart) | ✅ | PROVIDER |
-| `PUT` | `/providers/complete-profile` | Complete provider profile (multipart) | ✅ | PROVIDER |
-| `PUT` | `/providers/me` | Update provider profile (multipart) | ✅ | PROVIDER |
-| `PATCH` | `/providers/{providerId}/approve` | Approve provider application | ✅ | ADMIN |
-| `PATCH` | `/providers/{providerId}/reject?rejectionReason=` | Reject provider with reason | ✅ | ADMIN |
-| `PATCH` | `/providers/me/availability` | Toggle provider availability | ✅ | PROVIDER |
+| Method | Path | Description | Request Parameters | Request Body | Response Body | Status Codes | Auth |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `POST` | `/providers/register` | Submit provider application and national ID images. | Multipart parts: `provider`, `nationalIdFrontImage`, `nationalIdBackImage` | `RegisterProviderRequest` | `ApiResponse<Void>` | `201`, `400`, `401`, `403`, `409` | `PROVIDER` |
+| `PUT` | `/providers/complete-profile` | Complete provider profile with optional image. | Multipart parts: `provider`, optional `image` | `CompleteProviderProfileDto` | `ApiResponse<Void>` | `200`, `400`, `401`, `403` | `PROVIDER` |
+| `PUT` | `/providers/me` | Update provider profile with optional photo. | Multipart parts: `provider`, optional `photo` | `UpdateProviderProfileRequestDto` | `ApiResponse<Void>` | `200`, `400`, `401`, `403` | `PROVIDER` |
+| `PATCH` | `/providers/me/availability` | Toggle provider availability. | None | None | `ApiResponse<Void>` | `200`, `401`, `403` | `PROVIDER` |
+| `PATCH` | `/providers/{providerId}/approve` | Approve provider application. | `providerId` path | None | `ApiResponse<Void>` | `200`, `403`, `404` | `ADMIN` |
+| `PATCH` | `/providers/{providerId}/reject` | Reject provider application. | `providerId` path, `rejectionReason` query | None | `ApiResponse<Void>` | `200`, `400`, `403`, `404` | `ADMIN` |
+| `GET` | `/providers/admin` | List providers for admin. | `status`, `serviceCode`, `isAvailable`, pageable | None | `ApiResponse<Page<ProviderForAdminWithoutDetailsDto>>` | `200`, `403` | `ADMIN` |
+| `GET` | `/providers/admin/{providerId}` | Fetch provider admin details. | `providerId` path | None | `ApiResponse<ProviderForAdminWithDetailsDto>` | `200`, `403`, `404` | `ADMIN` |
+| `GET` | `/providers/{providerId}` | Fetch provider details for tourists. | `providerId` path | None | `ApiResponse<ProviderWithDetailsResponseDto>` | `200`, `404` | Authenticated |
+| `GET` | `/providers/{providerId}/reviews` | List provider reviews. | `providerId` path, pageable | None | `ApiResponse<Page<ProviderReviewResponseDto>>` | `200`, `404` | Authenticated |
+| `GET` | `/providers` | List approved available providers by service code. | `serviceCode` required, `orderBy` optional: `rating`, `pricePerHour`, `pricePerDay`, pageable | None | `ApiResponse<Page<ProviderWithoutDetailsResponseDto>>` | `200`, `400` | Authenticated |
 
----
+### Place Endpoints
 
-### Chat (AI) Endpoints
-
-| Method | Path | Description | Auth | Role |
-|--------|------|-------------|------|------|
-| `POST` | `/chats/messages` | Send message to AI chatbot | ✅ | TOURIST |
-| `GET` | `/chats/conversations` | Get user's chat conversations | ✅ | TOURIST |
-| `GET` | `/chats/conversations/{id}/messages` | Get messages in a conversation | ✅ | TOURIST |
-| `PATCH` | `/chats/conversations/{id}` | Update conversation title | ✅ | TOURIST |
-| `DELETE` | `/chats/conversations/{id}` | Delete a conversation | ✅ | TOURIST |
-
----
-
-### Review Endpoints
-
-| Method | Path | Description | Auth | Role |
-|--------|------|-------------|------|------|
-| `POST` | `/reviews/places/{placeId}` | Add a review for a place | ✅ | TOURIST |
-| `PUT` | `/reviews/{id}` | Update a review | ✅ | TOURIST |
-| `DELETE` | `/reviews/{id}` | Delete a review | ✅ | TOURIST |
-
----
-
-### Favorite Place Endpoints
-
-| Method | Path | Description | Auth | Role |
-|--------|------|-------------|------|------|
-| `POST` | `/users/favorite-places/{placeId}` | Add place to favorites | ✅ | Any authenticated |
-| `DELETE` | `/users/favorite-places/{placeId}` | Remove place from favorites | ✅ | Any authenticated |
-
----
-
-### Visited Place Endpoints
-
-| Method | Path | Description | Auth | Role |
-|--------|------|-------------|------|------|
-| `POST` | `/users/visited-places/{placeId}` | Mark place as visited | ✅ | TOURIST |
-| `DELETE` | `/users/visited-places/{placeId}` | Remove visited place | ✅ | TOURIST |
-
----
-
-### Recent Search Endpoints
-
-| Method | Path | Description | Auth | Role |
-|--------|------|-------------|------|------|
-| `POST` | `/users/recent-searches/{placeId}` | Add recent search | ✅ | TOURIST |
-| `DELETE` | `/users/recent-searches` | Clear all recent searches | ✅ | TOURIST |
-
----
-
-### User Preferences Endpoints
-
-| Method | Path | Description | Auth | Role |
-|--------|------|-------------|------|------|
-| `POST` | `/users/preferences` | Save preferred category IDs | ✅ | TOURIST |
-| `GET` | `/users/preferences` | Get user's preferred categories | ✅ | TOURIST |
-
----
+| Method | Path | Description | Request Parameters | Request Body | Response Body | Status Codes | Auth |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `GET` | `/places` | List all places for admin. | Pageable | None | `ApiResponse<Page<PlaceWithoutDetailsResponseDto>>` | `200`, `403` | `ADMIN` |
+| `GET` | `/places/category/{categoryId}` | List places by category. | `categoryId` path, pageable | None | `ApiResponse<Page<PlaceWithoutDetailsResponseDto>>` | `200`, `404` | Authenticated |
+| `GET` | `/places/governorate` | List places by Arabic or English governorate name. | `name`, pageable | None | `ApiResponse<Page<PlaceWithoutDetailsResponseDto>>` | `200`, `400` | Authenticated |
+| `GET` | `/places/favorites` | List current user's favorite places. | Pageable | None | `ApiResponse<Page<PlaceWithoutDetailsResponseDto>>` | `200`, `401`, `403` | `TOURIST` |
+| `GET` | `/places/visited` | List current user's visited places. | Pageable | None | `ApiResponse<Page<PlaceWithoutDetailsResponseDto>>` | `200`, `401`, `403` | `TOURIST` |
+| `GET` | `/places/popular` | List places ordered by rating. | Pageable | None | `ApiResponse<Page<PlaceWithoutDetailsResponseDto>>` | `200` | Authenticated |
+| `GET` | `/places/recent-searches` | List current user's recent searches. | None | None | `ApiResponse<Page<PlaceRecentSearchResponseDto>>` | `200`, `401`, `403` | `TOURIST` |
+| `GET` | `/places/{placeId}` | Fetch place details. | `placeId` path | None | `ApiResponse<PlaceWithDetailsResponseDto>` | `200`, `404` | Authenticated |
+| `POST` | `/places` | Create a place with images and prices. | Multipart parts: `place`, `images` | `PlaceInputDto` plus image list | `ApiResponse<Void>` | `201`, `400`, `403` | `ADMIN` |
+| `DELETE` | `/places/{id}` | Delete place. | `id` path | None | `ApiResponse<Void>` | `200`, `403`, `404` | `ADMIN` |
+| `GET` | `/places/typeahead` | Search place suggestions. | `q` query | None | `ApiResponse<Page<PlaceWithoutDetailsResponseDto>>` | `200`, `400` | Authenticated |
 
 ### Category Endpoints
 
-| Method | Path | Description | Auth | Role |
-|--------|------|-------------|------|------|
-| `GET` | `/categories` | Get all categories | ✅ | Any authenticated |
-| `GET` | `/categories/{id}` | Get category by ID | ✅ | ADMIN |
-| `POST` | `/categories` | Create category (multipart) | ✅ | ADMIN |
-| `PUT` | `/categories/{id}` | Update category (multipart) | ✅ | ADMIN |
-| `DELETE` | `/categories/{id}` | Delete category | ✅ | ADMIN |
-
----
-
-### Service Endpoints
-
-| Method | Path | Description | Auth | Role |
-|--------|------|-------------|------|------|
-| `GET` | `/services` | Get all services | ✅ | Any authenticated |
-| `GET` | `/services/{id}` | Get service by ID | ✅ | ADMIN |
-| `POST` | `/services` | Create service | ✅ | ADMIN |
-| `PUT` | `/services/{id}` | Update service | ✅ | ADMIN |
-| `DELETE` | `/services/{id}` | Delete service | ✅ | ADMIN |
-
----
+| Method | Path | Description | Request Parameters | Request Body | Response Body | Status Codes | Auth |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `GET` | `/categories` | List categories. | None | None | `ApiResponse<List<CategoryResponseDto>>` | `200` | Authenticated |
+| `GET` | `/categories/{id}` | Fetch category. | `id` path | None | `ApiResponse<CategoryResponseDto>` | `200`, `403`, `404` | `ADMIN` |
+| `POST` | `/categories` | Create category with icon image. | Multipart parts: `category`, `image` | `CategoryInputDto` | `ApiResponse<Void>` | `201`, `400`, `403` | `ADMIN` |
+| `PUT` | `/categories/{id}` | Update category and optional icon. | `id` path, multipart parts: `category`, optional `image` | `CategoryInputDto` | `ApiResponse<Void>` | `200`, `400`, `403`, `404` | `ADMIN` |
+| `DELETE` | `/categories/{id}` | Delete category. | `id` path | None | `ApiResponse<Void>` | `200`, `403`, `404` | `ADMIN` |
 
 ### Language Endpoints
 
-| Method | Path | Description | Auth | Role |
-|--------|------|-------------|------|------|
-| `GET` | `/languages` | Get all languages | ✅ | Any authenticated |
-| `GET` | `/languages/{id}` | Get language by ID | ✅ | ADMIN |
-| `POST` | `/languages` | Create language | ✅ | ADMIN |
-| `PUT` | `/languages/{id}` | Update language | ✅ | ADMIN |
-| `DELETE` | `/languages/{id}` | Delete language | ✅ | ADMIN |
+| Method | Path | Description | Request Parameters | Request Body | Response Body | Status Codes | Auth |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `GET` | `/languages` | List languages. | None | None | `ApiResponse<List<Language>>` | `200` | Authenticated |
+| `GET` | `/languages/{id}` | Fetch language. | `id` path | None | `ApiResponse<Language>` | `200`, `403`, `404` | `ADMIN` |
+| `POST` | `/languages` | Create language. | None | `LanguageInputDto { nameAr, nameEn, code }` | `ApiResponse<Void>` | `201`, `400`, `403` | `ADMIN` |
+| `PUT` | `/languages/{id}` | Update language. | `id` path | `LanguageInputDto` | `ApiResponse<Void>` | `200`, `400`, `403`, `404` | `ADMIN` |
+| `DELETE` | `/languages/{id}` | Delete language. | `id` path | None | `ApiResponse<Void>` | `200`, `403`, `404` | `ADMIN` |
 
----
+### Service Endpoints
 
-### Standardized API Response Format
+| Method | Path | Description | Request Parameters | Request Body | Response Body | Status Codes | Auth |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `GET` | `/services` | List service types. | None | None | `ApiResponse<List<Service>>` | `200` | Authenticated |
+| `GET` | `/services/{id}` | Fetch service type. | `id` path | None | `ApiResponse<Service>` | `200`, `403`, `404` | `ADMIN` |
+| `POST` | `/services` | Create service type. | None | `ServiceInputDto { nameAr, nameEn, code }` | `ApiResponse<Void>` | `201`, `400`, `403` | `ADMIN` |
+| `PUT` | `/services/{id}` | Update service type. | `id` path | `ServiceInputDto` | `ApiResponse<Void>` | `200`, `400`, `403`, `404` | `ADMIN` |
+| `DELETE` | `/services/{id}` | Delete service type. | `id` path | None | `ApiResponse<Void>` | `200`, `403`, `404` | `ADMIN` |
 
-All endpoints return a consistent response wrapper:
+### Review Endpoints
 
-```json
-{
-  "message": "Operation successful",
-  "data": { ... },
-  "timestamp": "2026-05-31T20:00:00"
-}
-```
+| Method | Path | Description | Request Parameters | Request Body | Response Body | Status Codes | Auth |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `POST` | `/reviews/places/{placeId}` | Add review for a place. | `placeId` path | `ReviewInputDto { stars, content }` | `ApiResponse<Void>` | `201`, `400`, `403`, `404`, `409` | `TOURIST` |
+| `PUT` | `/reviews/{id}` | Update own review. | `id` path | `ReviewInputDto` | `ApiResponse<Void>` | `200`, `400`, `403`, `404` | `TOURIST` |
+| `DELETE` | `/reviews/{id}` | Delete own review. | `id` path | None | `ApiResponse<Void>` | `200`, `403`, `404` | `TOURIST` |
 
-### Status Codes
+### Favorite, Visited, Preferences, Recent Search, and Chat Endpoints
 
-| Code | Meaning |
-|------|---------|
-| `200` | Success |
-| `201` | Resource created |
-| `400` | Bad request / validation error |
-| `401` | Unauthorized / invalid credentials |
-| `403` | Forbidden / insufficient permissions |
-| `404` | Resource not found |
-| `500` | Internal server error |
+| Method | Path | Description | Request Parameters | Request Body | Response Body | Status Codes | Auth |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `POST` | `/users/favorite-places/{placeId}` | Add favorite place. | `placeId` path | None | `ApiResponse<Void>` | `201`, `401`, `404` | Authenticated |
+| `DELETE` | `/users/favorite-places/{placeId}` | Remove favorite place. | `placeId` path | None | `ApiResponse<Void>` | `200`, `401`, `404` | Authenticated |
+| `POST` | `/users/visited-places/{placeId}` | Mark place visited. | `placeId` path | None | `ApiResponse<Void>` | `201`, `403`, `404` | `TOURIST` |
+| `DELETE` | `/users/visited-places/{placeId}` | Remove place from visited list. | `placeId` path | None | `ApiResponse<Void>` | `200`, `403`, `404` | `TOURIST` |
+| `POST` | `/users/recent-searches/{placeId}` | Add recent search. | `placeId` path | None | `ApiResponse<Void>` | `201`, `403`, `404` | `TOURIST` |
+| `DELETE` | `/users/recent-searches` | Clear recent searches. | None | None | `ApiResponse<Void>` | `200`, `403` | `TOURIST` |
+| `POST` | `/users/preferences` | Save selected category preferences. | None | `List<Long>` category IDs | `ApiResponse<Void>` | `201`, `400`, `403` | `TOURIST` |
+| `GET` | `/users/preferences` | List current user preferences. | None | None | `ApiResponse<List<UserInterestDto>>` | `200`, `403` | `TOURIST` |
+| `POST` | `/chats/messages` | Send a message to Gemini and persist conversation messages. | None | `ChatMessageRequest { message, conversationId }` | `ApiResponse<ChatMessageResponse>` | `201`, `400`, `403` | `TOURIST` |
+| `GET` | `/chats/conversations` | List current user's conversations. | Pageable | None | `ApiResponse<Page<ChatConversationResponse>>` | `200`, `403` | `TOURIST` |
+| `GET` | `/chats/conversations/{conversationId}/messages` | List messages in a conversation. | `conversationId` path, pageable | None | `ApiResponse<Page<ChatMessageResponse>>` | `200`, `403`, `404` | `TOURIST` |
+| `PATCH` | `/chats/conversations/{conversationId}` | Rename a conversation. | `conversationId` path | `ChatConversationTitleRequest { title }` | `ApiResponse<Void>` | `200`, `400`, `403`, `404` | `TOURIST` |
+| `DELETE` | `/chats/conversations/{conversationId}` | Delete a conversation. | `conversationId` path | None | `ApiResponse<Void>` | `200`, `403`, `404` | `TOURIST` |
 
----
+## Authentication and Security
 
-## 🔐 Authentication & Security
+### Security Strategy
 
-### Security Architecture
+Sawah uses stateless JWT authentication:
 
-The application implements a **stateless JWT-based authentication** system with **role-based access control (RBAC)**.
-
-#### Key Components
-
-| Component | Description |
-|-----------|-------------|
-| `SecurityConfig` | Configures the security filter chain, session policy (STATELESS), and endpoint permissions |
-| `AuthTokenFilter` | `OncePerRequestFilter` that extracts, validates JWT tokens, and sets the security context |
-| `JwtUtils` | Generates and validates JWT tokens with HMAC-SHA signing |
-| `CustomUserDetails` | Implements `UserDetails` interface wrapping the `User` entity |
-| `CustomUserDetailsService` | Loads user by email from database for authentication |
-| `BCryptPasswordEncoder` | Password hashing with BCrypt |
-
-#### Roles & Permissions
-
-| Role | Permissions |
-|------|------------|
-| `TOURIST` | Profile management, place browsing, reviews, favorites, visited places, AI chat, preferences |
-| `PROVIDER` | Provider registration, profile management, availability toggle |
-| `ADMIN` | Full CRUD on all resources, user management, provider approval/rejection |
-
-#### Public Endpoints (No Authentication Required)
-
-- `/api/v1/auth/**` — Login, sign-up, password reset
-- `/user_photos/**`, `/category_icons/**`, `/place_photos/**` — Static file serving
-- `/v3/api-docs/**`, `/swagger-ui/**` — API documentation
-
-### Security Flow
+1. User logs in through `/api/v1/auth/login`.
+2. Spring Security authenticates email/password using `DaoAuthenticationProvider`.
+3. `JwtUtils` creates a signed JWT containing:
+   - `sub`: user email
+   - `id`: user ID
+   - `roles`: Spring Security authorities
+   - `iat`: issued-at timestamp
+   - `exp`: expiration timestamp
+4. Client sends `Authorization: Bearer <token>` on protected requests.
+5. `AuthTokenFilter` validates the token and sets the `SecurityContext`.
+6. Controllers use `@PreAuthorize` to enforce roles.
 
 ```mermaid
 sequenceDiagram
     participant C as Client
+    participant AC as AuthController
+    participant AM as AuthenticationManager
+    participant JWT as JwtUtils
     participant F as AuthTokenFilter
-    participant J as JwtUtils
-    participant U as UserDetailsService
-    participant SC as SecurityContext
-    participant CT as Controller
+    participant API as Protected Controller
 
-    C->>F: HTTP Request with "Authorization: Bearer <token>"
-    F->>F: Extract JWT from header
-    F->>J: validateToken(token)
-    J-->>F: true / throws JwtException
-
-    alt Token Valid
-        F->>J: getUsernameFromToken(token)
-        J-->>F: email
-        F->>U: loadUserByUsername(email)
-        U-->>F: CustomUserDetails
-        F->>SC: Set Authentication
-        F->>CT: Forward Request
-        CT-->>C: 200 OK + Response
-    else Token Invalid/Expired
-        F-->>C: 401 Unauthorized
-    end
+    C->>AC: POST /auth/login
+    AC->>AM: Authenticate email/password
+    AM-->>AC: Authentication principal
+    AC->>JWT: generateTokenForUser()
+    JWT-->>AC: JWT
+    AC-->>C: AuthResponse
+    C->>F: Request with Bearer token
+    F->>JWT: validateToken()
+    JWT-->>F: Valid token
+    F->>API: Authenticated request
+    API-->>C: ApiResponse
 ```
 
-### Password Reset Flow
+### Public Paths
 
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant Auth as AuthService
-    participant Email as EmailService
-    participant Redis as Redis Cloud
-    participant DB as MySQL
+Configured as public in `SecurityConfig`:
 
-    C->>Auth: POST /forgot-password {email}
-    Auth->>DB: Check if user exists
-    Auth->>Auth: Generate 6-digit OTP
-    Auth->>Redis: Store OTP with 10min TTL
-    Auth->>Email: Send OTP via SMTP (async)
-    Auth-->>C: 200 "Code sent"
+- `/api/v1/auth/**`
+- `/user_photos/**`
+- `/category_icons/**`
+- `/place_photos/**`
+- `/v3/api-docs/**`
+- `/v3/api-docs.yaml`
+- `/swagger-ui/**`
+- `/swagger-ui.html`
+- All `OPTIONS /**` requests
 
-    C->>Auth: POST /reset-password {email, otp, newPassword}
-    Auth->>Redis: Validate & consume OTP
-    Auth->>DB: Update password (BCrypt hash)
-    Auth-->>C: 200 "Password reset"
-```
+`WebConfig` also serves `/providers/national-ids/**`, but this path is not listed in the public security matcher. Access therefore requires authentication unless matched elsewhere by Spring Security behavior.
 
-### JWT Token Structure
+### Roles
 
-The JWT token contains the following claims:
+| Role | Source | Main Permissions |
+| --- | --- | --- |
+| `TOURIST` | `RoleName.TOURIST` | Tourist profile, preferences, reviews, favorites, visited places, recent searches, AI chat |
+| `PROVIDER` | `RoleName.PROVIDER` | Provider application, profile completion/update, availability |
+| `ADMIN` | `RoleName.ADMIN` | User management, provider approval, category/language/service/place administration |
 
-| Claim | Description |
-|-------|-------------|
-| `sub` | User email address |
-| `id` | User ID |
-| `roles` | Set of granted authorities (e.g., `ROLE_TOURIST`) |
-| `iat` | Issued at timestamp |
-| `exp` | Expiration timestamp (configurable, default: 7 days) |
+### Password and Account Protections
 
----
+- Passwords are encoded with `BCryptPasswordEncoder`.
+- Inactive users cannot log in.
+- Provider rejection is handled during login by returning provider status and rejection reason.
+- Password reset OTPs are stored in Redis under `OTP:{email}` and deleted after successful use.
+- CSRF is disabled because the API uses stateless JWT sessions.
 
-## ⚙️ Configuration
+## Configuration
 
 ### Environment Variables
 
 | Variable | Required | Description |
-|----------|----------|-------------|
-| `DB_URL` | ✅ | MySQL JDBC connection URL (e.g., `jdbc:mysql://localhost:3306/sawah`) |
-| `DB_USERNAME` | ✅ | MySQL database username |
-| `DB_PASSWORD` | ✅ | MySQL database password |
-| `JWT_SECRET_KEY` | ✅ | Base64-encoded HMAC secret key for JWT signing |
-| `ADMIN_EMAIL` | ✅ | Default admin account email (seeded on startup) |
-| `ADMIN_PASSWORD` | ✅ | Default admin account password (seeded on startup) |
-| `MAIL_HOST` | ✅ | SMTP mail server host |
-| `MAIL_PORT` | ✅ | SMTP mail server port |
-| `MAIL_USERNAME` | ✅ | SMTP authentication username |
-| `MAIL_PASSWORD` | ✅ | SMTP authentication password |
-| `VALIDATE_EMAIL_API_KEY` | ⚠️ | Hunter.io API key for email verification (currently disabled in code) |
-| `GEMINI_API_KEY` | ✅ | Google Gemini AI API key |
+| --- | --- | --- |
+| `DB_URL` | Yes | MySQL JDBC URL. |
+| `DB_USERNAME` | Yes | MySQL username. |
+| `DB_PASSWORD` | Yes | MySQL password. |
+| `ADMIN_EMAIL` | Yes | Admin account email seeded at startup. |
+| `ADMIN_PASSWORD` | Yes | Admin account password seeded at startup. |
+| `JWT_SECRET_KEY` | Yes | Base64-encoded JWT signing key. |
+| `MAIL_HOST` | Yes | SMTP host. |
+| `MAIL_PORT` | Yes | SMTP port. |
+| `MAIL_USERNAME` | Yes | SMTP username. |
+| `MAIL_PASSWORD` | Yes | SMTP password. |
+| `VALIDATE_EMAIL_API_KEY` | Yes if Hunter.io validation is enabled | API key for Hunter.io email verifier. The client exists, but sign-up verification is commented out. |
+| `GEMINI_API_KEY` | Yes | Google Gemini API key for Spring AI. |
 
 ### Application Properties
 
-| Property | Default | Description |
-|----------|---------|-------------|
-| `server.port` | `9091` | Application server port |
-| `spring.jpa.hibernate.ddl-auto` | `update` | Auto-generate/update schema |
-| `spring.jpa.show-sql` | `true` | Log SQL queries |
-| `spring.cache.type` | `redis` | Cache provider |
-| `spring.cache.redis.time-to-live` | `10m` | Default cache TTL |
-| `spring.servlet.multipart.max-file-size` | `10MB` | Max upload file size |
-| `spring.servlet.multipart.max-request-size` | `10MB` | Max request size |
-| `auth.token.expiration-in-mils` | `604800000` | JWT expiration (7 days) |
-| `spring.ai.google.genai.chat.options.model` | `gemini-2.5-flash` | AI model selection |
-| `spring.ai.google.genai.chat.options.temperature` | `0.7` | AI creativity level |
-| `api.prefix` | `/api/v1` | API route prefix |
+| Property | Value in codebase | Description |
+| --- | --- | --- |
+| `spring.application.name` | `Sawah Application` | Spring application name |
+| `server.port` | `9091` | HTTP server port |
+| `spring.datasource.driver-class-name` | `com.mysql.cj.jdbc.Driver` | MySQL driver |
+| `spring.jpa.hibernate.ddl-auto` | `update` | Hibernate schema update mode |
+| `spring.jpa.show-sql` | `true` | SQL logging enabled |
+| `logging.level.org.hibernate.orm.jdbc.bind` | `trace` | Hibernate bind parameter logging |
+| `api.prefix` | `/api/v1` | API base path |
+| `spring.cache.type` | `redis` | Redis cache provider |
+| `spring.cache.redis.time-to-live` | `10m` | Redis cache TTL |
+| `auth.token.expiration-in-mils` | `604800000` | JWT expiration, 7 days |
+| `spring.messages.basename` | `i18n/messages` | Message bundle location |
+| `spring.servlet.multipart.max-file-size` | `10MB` | Max uploaded file size |
+| `spring.servlet.multipart.max-request-size` | `10MB` | Max multipart request size |
+| `spring.ai.google.genai.chat.options.model` | `gemini-2.5-flash` | Gemini model name |
+| `spring.ai.google.genai.chat.options.temperature` | `0.7` | Gemini temperature |
 
----
-
-## 🚀 Installation
+## Installation
 
 ### Prerequisites
 
-- **Java 17** (JDK)
-- **MySQL 8.x** running instance
-- **Redis** server or cloud instance
-- **Maven 3.9+** (or use included Maven Wrapper)
+- Java 17
+- MySQL
+- Redis or access to the configured Redis Cloud instance
+- SMTP credentials
+- Google Gemini API key
+- Maven, or use the included Maven Wrapper
 
-### 1. Clone the Repository
+### Clone
 
 ```bash
-git clone https://github.com/your-username/sawah-backend.git
+git clone <repository-url>
 cd sawah-backend
 ```
 
-### 2. Create MySQL Database
+### Create Database
 
 ```sql
 CREATE DATABASE sawah_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-### 3. Set Environment Variables
+### Configure Environment
 
-Create a `.env` file or set system environment variables:
+Windows PowerShell example:
 
-```bash
-# Database
-export DB_URL=jdbc:mysql://localhost:3306/sawah_db?useSSL=false&serverTimezone=UTC
-export DB_USERNAME=root
-export DB_PASSWORD=your_mysql_password
-
-# JWT
-export JWT_SECRET_KEY=your_base64_encoded_secret_key_min_256_bits
-
-# Admin Account (seeded on first startup)
-export ADMIN_EMAIL=admin@sawah.com
-export ADMIN_PASSWORD=AdminSecurePassword123
-
-# Email (SMTP)
-export MAIL_HOST=smtp.gmail.com
-export MAIL_PORT=587
-export MAIL_USERNAME=your_email@gmail.com
-export MAIL_PASSWORD=your_app_password
-
-# Email Verification (optional)
-export VALIDATE_EMAIL_API_KEY=your_hunter_io_api_key
-
-# AI
-export GEMINI_API_KEY=your_google_gemini_api_key
+```powershell
+$env:DB_URL="jdbc:mysql://localhost:3306/sawah_db"
+$env:DB_USERNAME="root"
+$env:DB_PASSWORD="your_password"
+$env:ADMIN_EMAIL="admin@example.com"
+$env:ADMIN_PASSWORD="your_admin_password"
+$env:JWT_SECRET_KEY="your_base64_encoded_secret"
+$env:MAIL_HOST="smtp.example.com"
+$env:MAIL_PORT="587"
+$env:MAIL_USERNAME="mail_user"
+$env:MAIL_PASSWORD="mail_password"
+$env:VALIDATE_EMAIL_API_KEY="hunter_api_key"
+$env:GEMINI_API_KEY="gemini_api_key"
 ```
 
-### 4. Build the Project
+Linux/macOS example:
 
 ```bash
-# Using Maven Wrapper (recommended)
-./mvnw clean install -DskipTests
-
-# Or using system Maven
-mvn clean install -DskipTests
+export DB_URL="jdbc:mysql://localhost:3306/sawah_db"
+export DB_USERNAME="root"
+export DB_PASSWORD="your_password"
+export ADMIN_EMAIL="admin@example.com"
+export ADMIN_PASSWORD="your_admin_password"
+export JWT_SECRET_KEY="your_base64_encoded_secret"
+export MAIL_HOST="smtp.example.com"
+export MAIL_PORT="587"
+export MAIL_USERNAME="mail_user"
+export MAIL_PASSWORD="mail_password"
+export VALIDATE_EMAIL_API_KEY="hunter_api_key"
+export GEMINI_API_KEY="gemini_api_key"
 ```
 
-### 5. Run the Application
+### Build
 
 ```bash
-# Using Maven Wrapper
+./mvnw clean install
+```
+
+On Windows:
+
+```powershell
+.\mvnw.cmd clean install
+```
+
+### Run
+
+```bash
 ./mvnw spring-boot:run
+```
 
-# Or using the JAR
+On Windows:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+### Verify
+
+```text
+http://localhost:9091/swagger-ui.html
+http://localhost:9091/v3/api-docs
+```
+
+## Docker
+
+Not identifiable from the codebase.
+
+No `Dockerfile`, `docker-compose.yml`, or container orchestration configuration was found.
+
+## Testing
+
+`spring-boot-starter-test` is included, but no test classes are currently present under `src/test`.
+
+| Testing Area | Status |
+| --- | --- |
+| Unit tests | Not identifiable from the codebase. |
+| Integration tests | Not identifiable from the codebase. |
+| Test coverage | Not identifiable from the codebase. |
+| JUnit/Mockito availability | Available through `spring-boot-starter-test`. |
+
+Run tests when they are added:
+
+```bash
+./mvnw test
+```
+
+## Logging and Monitoring
+
+### Logging
+
+Spring Boot's default logging stack is used.
+
+Configured verbose loggers:
+
+| Logger | Level | Purpose |
+| --- | --- | --- |
+| `org.hibernate.orm.jdbc.bind` | `trace` | Logs Hibernate bind values |
+| `org.springframework.cache` | `TRACE` | Logs Spring cache activity |
+| `org.springframework.data.redis` | `TRACE` | Logs Redis activity |
+
+`JwtUtils` logs expired and invalid JWT events through Lombok `@Slf4j`.
+
+### Monitoring
+
+Not identifiable from the codebase.
+
+`spring-boot-starter-actuator` is not present, and no health-check or metrics endpoints are configured.
+
+## External Integrations
+
+| Integration | Code Location | Purpose | Status |
+| --- | --- | --- | --- |
+| MySQL | `application.properties`, repositories | Primary database | Active |
+| Redis | `RedisConfig`, `AuthServiceImpl` | OTP storage and cache configuration | Active |
+| SMTP mail | `EmailServiceImpl` | Async password reset email | Active |
+| Google Gemini | `service/aiService` | AI chat responses and generated conversation titles | Active |
+| Hunter.io email verifier | `EmailVerificationService` | Email existence validation | Client exists; sign-up call is commented out |
+| Local filesystem | `FileStorageServiceImpl`, `WebConfig` | Store and serve uploaded image files | Active |
+
+## Design Patterns
+
+| Pattern | Usage |
+| --- | --- |
+| Dependency Injection | Controllers, services, config, and security classes use Spring-managed beans and constructor injection through Lombok `@RequiredArgsConstructor`. |
+| Layered Architecture | Controllers delegate to services, services use repositories and mappers. |
+| Repository Pattern | Spring Data JPA repositories isolate persistence access. |
+| Service Layer Pattern | Most domains have interface/implementation pairs, such as `UserService` and `UserServiceImpl`. |
+| DTO Pattern | Request and response records prevent exposing entity models directly. |
+| Mapper Pattern | MapStruct mappers centralize entity/DTO conversion. |
+| Builder Pattern | Entities use Lombok `@Builder`. |
+| Template Method | `AuthTokenFilter` extends `OncePerRequestFilter` and implements `doFilterInternal`. |
+| Strategy-style abstraction | `AiChatService` abstracts AI chat implementation behind `GeminiServiceImpl`. |
+| Centralized Exception Handling | `GlobalExceptionHandler` applies cross-cutting error response behavior. |
+
+## Performance Considerations
+
+| Area | Current Implementation |
+| --- | --- |
+| Pagination | Controllers use Spring Data `Pageable`; `AppConfig` caps max page size at 100 and uses zero-indexed pages. |
+| Caching | Redis cache provider is configured with 10-minute TTL and JSON serialization. No `@Cacheable`, `@CachePut`, or `@CacheEvict` annotations were found. |
+| OTP storage | Redis `StringRedisTemplate` stores reset OTPs for 10 minutes. |
+| Async processing | Email sending is marked `@Async`, and `@EnableAsync` is enabled. |
+| Database indexes | Unique indexes exist for email, phone, place names, provider national ID, and several uniqueness constraints. |
+| File upload limits | Multipart max file and request size are both 10MB. |
+| Lazy loading | Many associations use `FetchType.LAZY`; user roles are eager for authentication. |
+
+## Deployment
+
+Not identifiable from the codebase.
+
+No production profile, Docker configuration, CI/CD workflow, infrastructure manifest, or deployment script was found.
+
+Build artifact:
+
+```bash
+./mvnw clean package
+```
+
+Expected JAR:
+
+```text
+target/sawah-backend-0.0.1-SNAPSHOT.jar
+```
+
+Run packaged application:
+
+```bash
 java -jar target/sawah-backend-0.0.1-SNAPSHOT.jar
 ```
 
-### 6. Verify
+## Known Issues
 
-- **API**: `http://localhost:9091/api/v1/auth/login`
-- **Swagger UI**: `http://localhost:9091/swagger-ui.html`
-- **OpenAPI Spec**: `http://localhost:9091/v3/api-docs`
+1. Redis host, port, username, and password are hardcoded in `application.properties`. This is a security and environment-portability risk.
+2. `spring.jpa.hibernate.ddl-auto=update` is enabled. This is convenient for development but risky for controlled production schema management.
+3. SQL, Hibernate bind, cache, and Redis trace logging are enabled and may expose sensitive operational data or create noisy production logs.
+4. CORS allows all origins with credentials enabled through `allowedOriginPatterns("*")`.
+5. OpenAPI servers include a hardcoded ngrok URL.
+6. Hunter.io email verification exists but is commented out during sign-up.
+7. No tests were found under `src/test`.
+8. No Docker or CI/CD configuration was found.
+9. Local filesystem storage does not scale cleanly across multiple application instances.
+10. `providers/national-ids/**` is served by `WebConfig`, but it is not listed in the public security allowlist.
+11. `ServiceRequest` and `ProviderReview` persistence models exist, but no controller for creating or managing service requests was found.
+12. Some Arabic enum source values appear mojibake-encoded in the current files, for example visitor category and nationality Arabic enums.
+13. `FileStorageServiceImpl` logs deletion with `System.out.println` instead of the application logger.
 
----
+## Future Improvements
 
-## 🐳 Docker
+1. Move Redis credentials and all environment-specific values to environment variables or a secret manager.
+2. Add database migrations with Flyway or Liquibase and disable Hibernate schema updates in production.
+3. Add unit, repository, service, controller, and integration tests.
+4. Add Docker and Docker Compose for local MySQL/Redis/application setup.
+5. Add GitHub Actions or another CI/CD workflow for build and test validation.
+6. Add Spring Boot Actuator for health checks and metrics.
+7. Add rate limiting and request throttling for authentication, password reset, and chat endpoints.
+8. Move uploaded files to object storage such as S3, Azure Blob Storage, or Google Cloud Storage.
+9. Add service request controllers if booking/request workflows are intended to be public API features.
+10. Add provider review creation and update workflows if provider ratings should be user-managed.
+11. Replace hardcoded OpenAPI servers with profile-specific configuration.
+12. Tighten CORS to known frontend origins.
+13. Add AI prompt safety controls and abuse prevention for chat endpoints.
+14. Fix source encoding for Arabic enum constants and review all localized source comments.
+15. Add structured logging and correlation IDs for production diagnostics.
 
-Not identifiable from the codebase. No `Dockerfile` or `docker-compose.yml` was found in the repository.
+## Contributing
 
-To containerize, a Dockerfile like the following could be added:
-
-```dockerfile
-FROM eclipse-temurin:17-jre-alpine
-WORKDIR /app
-COPY target/sawah-backend-0.0.1-SNAPSHOT.jar app.jar
-EXPOSE 9091
-ENTRYPOINT ["java", "-jar", "app.jar"]
-```
-
----
-
-## 🧪 Testing
-
-The `src/test/` directory is currently **empty**. No unit tests, integration tests, or test configurations were found.
-
-### Testing Framework (Available via Dependencies)
-
-The project includes `spring-boot-starter-test` which bundles:
-- **JUnit 5** — Unit testing framework
-- **Mockito** — Mocking framework
-- **Spring Test** — Integration testing support
-- **AssertJ** — Fluent assertions
-
-### How to Run Tests (When Added)
+1. Fork the repository.
+2. Create a branch for your change.
+3. Follow the existing package organization and service/interface style.
+4. Use DTOs for API contracts rather than exposing entities directly.
+5. Add validation annotations and localized messages for new inputs.
+6. Add or update MapStruct mappers when DTO shapes change.
+7. Add tests for new behavior.
+8. Run the build before opening a pull request:
 
 ```bash
-# Run all tests
-./mvnw test
-
-# Run with coverage report
-./mvnw test jacoco:report
+./mvnw clean test
 ```
 
----
+## License
 
-## 📊 Logging & Monitoring
+Not identifiable from the codebase.
 
-### Logging Configuration
-
-| Logger | Level | Purpose |
-|--------|-------|---------|
-| `org.hibernate.orm.jdbc.bind` | `TRACE` | Log Hibernate parameter bindings |
-| `org.springframework.cache` | `TRACE` | Log cache operations |
-| `org.springframework.data.redis` | `TRACE` | Log Redis operations |
-
-### Logging Framework
-
-The application uses **SLF4J** with **Logback** (Spring Boot default). JWT-related events are logged via the `@Slf4j` annotation on `JwtUtils`:
-- Token expiration warnings
-- Invalid JWT errors
-
-### Health Checks & Monitoring
-
-Not identifiable from the codebase. Spring Boot Actuator is not included as a dependency. For production, adding `spring-boot-starter-actuator` is recommended.
-
----
-
-## 🔌 External Integrations
-
-### 1. Google Gemini AI (Spring AI)
-
-| Detail | Value |
-|--------|-------|
-| **Purpose** | AI-powered tourism chatbot |
-| **Model** | `gemini-2.5-flash` |
-| **Library** | Spring AI 1.1.5 (`spring-ai-starter-model-google-genai`) |
-| **Features** | Bilingual responses (Arabic/English), auto-title generation, tourism context awareness |
-| **Temperature** | `0.7` (balanced creativity) |
-
-The AI service (`GeminiServiceImpl`) acts as a virtual tour guide, automatically detecting the user's language and responding accordingly. It generates 3-word conversation titles from the first message.
-
-### 2. SMTP Email Service
-
-| Detail | Value |
-|--------|-------|
-| **Purpose** | Password reset OTP delivery |
-| **Protocol** | SMTP with STARTTLS |
-| **Features** | Async sending via `@Async`, localized subjects and bodies |
-| **Configuration** | Via environment variables (`MAIL_HOST`, `MAIL_PORT`, etc.) |
-
-### 3. Hunter.io Email Verification
-
-| Detail | Value |
-|--------|-------|
-| **Purpose** | Validate email existence during registration |
-| **Client** | Spring WebFlux `WebClient` |
-| **API** | `https://api.hunter.io/v2/email-verifier` |
-| **Status** | Currently **disabled** in code (commented out in `AuthServiceImpl`) |
-
-### 4. Redis Cloud (Redis Labs)
-
-| Detail | Value |
-|--------|-------|
-| **Purpose** | OTP storage with TTL, general caching |
-| **Provider** | Redis Labs Cloud |
-| **TTL** | 10 minutes (configurable) |
-| **Serialization** | JSON via `RedisSerializer.json()` |
-
----
-
-## 🎨 Design Patterns
-
-### 1. Dependency Injection (IoC)
-
-Used extensively throughout the application via Spring's `@RequiredArgsConstructor` (Lombok) and constructor injection. Every controller, service, and security component uses constructor-based DI.
-
-### 2. Repository Pattern
-
-All data access is abstracted through Spring Data JPA repository interfaces (20 repositories), providing a clean separation between business logic and data persistence.
-
-### 3. Service Layer Pattern
-
-Each domain concept has a service interface and implementation pair (e.g., `UserService` / `UserServiceImpl`), ensuring loose coupling and testability.
-
-### 4. DTO (Data Transfer Object) Pattern
-
-Extensive use of DTOs (16 sub-packages) with MapStruct mappers to decouple the API layer from internal entity models. Separate DTOs exist for input, response, and admin views.
-
-### 5. Builder Pattern
-
-All JPA entities use the Lombok `@Builder` annotation, enabling fluent object construction with sensible defaults (e.g., `accountStatus = ACTIVE`, `rating = ZERO`).
-
-### 6. Strategy Pattern
-
-The `AiChatService` interface with its `GeminiServiceImpl` implementation follows the Strategy pattern, allowing the AI provider to be swapped without changing consumer code.
-
-### 7. Template Method Pattern
-
-The `OncePerRequestFilter` extension in `AuthTokenFilter` follows the Template Method pattern, with the framework calling `doFilterInternal()`.
-
-### 8. Observer Pattern (Event-Driven)
-
-The `@Async` email service acts as an asynchronous event handler for password reset events, decoupling email delivery from the main request flow.
-
-### 9. Singleton Pattern
-
-All Spring beans are singletons by default. Configuration classes (`SecurityConfig`, `RedisConfig`, `AppConfig`) produce singleton beans.
-
-### 10. Centralized Exception Handling
-
-The `GlobalExceptionHandler` uses `@RestControllerAdvice` to provide a cross-cutting concern for error handling across all controllers.
-
----
-
-## ⚡ Performance Considerations
-
-### Caching (Redis)
-
-- **Cache Provider**: Redis Cloud with 10-minute TTL
-- **Usage**: General caching layer configured via `spring.cache.type=redis`
-- **OTP Storage**: Redis-backed OTP with 10-minute expiration for password resets
-
-### Pagination
-
-- All list endpoints return `Page<T>` responses with configurable page size
-- Default page size: 20 items
-- Maximum page size: 100 items (enforced via `PageableHandlerMethodArgumentResolverCustomizer`)
-- Zero-indexed pagination (`oneIndexedParameters = false`)
-
-### Database Optimization
-
-- **Indexes**: Strategic database indexes on frequently queried columns (`email`, `phone_number`, `national_id`, `name_en`, `name_ar`)
-- **Lazy Loading**: All `@ManyToOne` and `@OneToOne` associations use `FetchType.LAZY` to prevent N+1 queries
-- **Eager Roles**: `User.roles` uses `FetchType.EAGER` since roles are needed for every authentication check
-
-### Async Processing
-
-- **Email Sending**: `@Async` annotation on `EmailServiceImpl.sendVerificationCode()` with `@EnableAsync` in `AppConfig`
-- This prevents email delivery from blocking the HTTP request thread
-
-### File Upload Limits
-
-- Maximum file size: 10MB
-- Maximum request size: 10MB
-
----
-
-## 🚢 Deployment
-
-### Production Considerations
-
-1. **Database**: Switch `spring.jpa.hibernate.ddl-auto` from `update` to `validate` or `none`
-2. **SQL Logging**: Set `spring.jpa.show-sql=false` and reduce Hibernate bind logging
-3. **Redis**: The application is already configured with Redis Cloud (Redis Labs)
-4. **CORS**: Restrict `allowedOriginPatterns` from `*` to specific frontend domains
-5. **Tunneling**: The project includes Ngrok server URL in OpenAPI config for development; remove for production
-6. **Redis Credentials**: Move hardcoded Redis credentials to environment variables
-7. **Secret Management**: Ensure `JWT_SECRET_KEY` is strong and stored securely
-
-### Build Artifacts
-
-```bash
-# Generate production JAR
-./mvnw clean package -DskipTests
-
-# Output: target/sawah-backend-0.0.1-SNAPSHOT.jar
-```
-
-### Run in Production
-
-```bash
-java -jar target/sawah-backend-0.0.1-SNAPSHOT.jar \
-  --spring.profiles.active=prod \
-  --server.port=8080
-```
-
----
-
-## ⚠️ Known Issues
-
-1. **Hardcoded Redis Credentials** — Redis Cloud credentials (host, port, password) are hardcoded in `application.properties` instead of being externalized to environment variables. This is a **security risk**.
-
-2. **Empty Test Suite** — The `src/test/` directory is empty. No unit tests, integration tests, or test configurations exist.
-
-3. **Email Verification Disabled** — The Hunter.io email verification during sign-up is commented out in `AuthServiceImpl`, meaning any email format can register.
-
-4. **No Dockerfile** — No containerization configuration exists, making deployment less portable.
-
-5. **Hardcoded Ngrok URL** — The OpenAPI server configuration contains a hardcoded Ngrok URL that will expire and should be dynamized.
-
-6. **SQL Logging in Production** — `spring.jpa.show-sql=true` and `TRACE` level logging for Hibernate, Cache, and Redis are enabled, which would cause excessive log output in production.
-
-7. **No Rate Limiting** — No API rate limiting is configured, making endpoints vulnerable to abuse.
-
-8. **Local File Storage** — Images are stored on the local filesystem, which does not scale for distributed deployments. A cloud storage solution (S3, GCS) would be more appropriate.
-
-9. **No Input Sanitization for AI** — User prompts sent to the Gemini AI model are not sanitized for prompt injection attacks.
-
-10. **CORS Wide Open** — `allowedOriginPatterns("*")` permits requests from any origin with credentials enabled.
-
----
-
-## 🔮 Future Improvements
-
-1. **Cloud File Storage** — Migrate from local filesystem to AWS S3 or Google Cloud Storage for scalable image hosting
-2. **API Rate Limiting** — Implement request throttling with Spring Cloud Gateway or Bucket4j
-3. **WebSocket Chat** — Add real-time communication using WebSockets for the AI chatbot
-4. **Comprehensive Test Suite** — Add unit tests (JUnit 5 + Mockito), integration tests, and API tests with test coverage
-5. **Docker & Docker Compose** — Containerize the application with MySQL and Redis services
-6. **CI/CD Pipeline** — Configure GitHub Actions for automated testing, building, and deployment
-7. **Spring Actuator** — Add health checks, metrics, and monitoring endpoints
-8. **API Versioning** — Formalize API versioning strategy beyond the URL prefix
-9. **Push Notifications** — Notify providers of new service requests and tourists of status updates
-10. **Payment Integration** — Add payment gateway (Stripe, PayMob) for service bookings
-11. **Geolocation Search** — Implement proximity-based place search using MySQL spatial queries
-12. **Profile Completion Tracking** — Add completion percentage for tourist and provider profiles
-13. **Admin Analytics Dashboard** — Backend endpoints for platform statistics and reporting
-14. **Externalize Redis Config** — Move Redis credentials to environment variables
-15. **Audit Logging** — Track user actions for compliance and debugging
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these guidelines:
-
-### Getting Started
-
-1. **Fork** the repository
-2. **Clone** your fork locally
-3. **Create a branch** for your feature/fix:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-4. **Make changes** and commit with clear messages:
-   ```bash
-   git commit -m "feat: add endpoint for provider statistics"
-   ```
-5. **Push** to your fork and open a **Pull Request**
-
-### Code Standards
-
-- Follow existing package and naming conventions
-- Use **Lombok** annotations consistently (`@RequiredArgsConstructor`, `@Builder`, `@Getter/@Setter`)
-- Create **interface + implementation** pairs for new services
-- Use **MapStruct** mappers for entity ↔ DTO conversion
-- Add **i18n** messages for both English and Arabic (`messages.properties`, `messages_ar.properties`)
-- Use **Jakarta Validation** annotations with message keys for request validation
-- Write **meaningful commit messages** following [Conventional Commits](https://www.conventionalcommits.org/)
-
-### Pull Request Checklist
-
-- [ ] Code compiles without errors
-- [ ] Existing functionality is not broken
-- [ ] New endpoints are documented with Swagger annotations
-- [ ] i18n messages added for both languages
-- [ ] DTOs created for request/response objects
-
----
-
-## 📄 License
-
-Not identifiable from the codebase. No `LICENSE` file was found in the repository.
-
-> It is recommended to add a license file (e.g., MIT, Apache 2.0) to clarify usage rights.
-
----
-
-<div align="center">
-
-**Built with ❤️ for Egypt's Tourism Industry**
-
-*Sawah — Your Gateway to Exploring Egypt*
-
-</div>
-]]>
+No `LICENSE` file was found.
