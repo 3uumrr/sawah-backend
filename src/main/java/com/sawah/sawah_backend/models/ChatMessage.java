@@ -3,6 +3,8 @@ package com.sawah.sawah_backend.models;
 import com.sawah.sawah_backend.enums.ChatSender;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -11,7 +13,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Entity(name = "chat_messages")
+@Entity
+@Table(name = "chat_messages")
 public class ChatMessage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,5 +33,6 @@ public class ChatMessage {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "conversation_id" , nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private ChatConversation chatConversation;
 }
