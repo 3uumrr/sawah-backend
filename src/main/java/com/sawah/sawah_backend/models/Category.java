@@ -10,7 +10,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Entity(name = "categories")
+@Entity
+@Table(name = "categories")
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,8 +43,9 @@ public class Category {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public Category(Long id, String nameEn) {
-        this.id = id;
+    public Category(String nameEn, String nameAr, String iconUrl) {
         this.nameEn = nameEn;
+        this.nameAr = nameAr;
+        this.iconUrl = iconUrl;
     }
 }

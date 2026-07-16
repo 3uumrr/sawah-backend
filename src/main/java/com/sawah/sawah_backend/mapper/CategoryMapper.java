@@ -20,8 +20,10 @@ public interface CategoryMapper {
     @Mapping(target = "iconUrl", source = "category", qualifiedByName = "toFullUrl")
     CategoryResponseDto toResponseDto(Category category);
 
-    @Mapping(target = "iconUrl", source = "category", qualifiedByName = "toFullUrl")
     List<CategoryResponseDto> toListResponseDto(List<Category> category);
+
+    @Mapping(target = "iconUrl", source = "category", qualifiedByName = "toFullUrl")
+    UserInterestDto toUserInterestDto(Category category);
 
     List<UserInterestDto> toListUserCategoryDto(List<Category> category);
 

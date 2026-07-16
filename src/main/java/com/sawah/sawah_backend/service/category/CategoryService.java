@@ -17,4 +17,5 @@ public interface CategoryService {
     List<Category> getCategoriesByUserId(Long userId);
 
     List<Category> findAllByIds(List<Long> categoryIds);
+    Long categoriesCount();
 }

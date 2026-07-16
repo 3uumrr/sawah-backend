@@ -6,6 +6,10 @@ import com.sawah.sawah_backend.mapper.CategoryMapper;
 import com.sawah.sawah_backend.response.ApiResponse;
 import com.sawah.sawah_backend.service.category.CategoryService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
@@ -30,6 +34,10 @@ public class CategoryController {
     private final CategoryMapper mapper;
 
 
+    @Operation(summary = "List categories", description = "List categories. Public endpoint; authentication is not enforced by method-level security. Successful responses are wrapped in the application ApiResponse envelope.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", content = @Content(schema = @Schema(implementation = CategoryResponseDto.class)))
+    })
     @GetMapping
     public ResponseEntity<ApiResponse<List<CategoryResponseDto>>> getAllCategories(Locale locale){
 
@@ -40,6 +48,10 @@ public class CategoryController {
         return ResponseEntity.ok(new ApiResponse<>(message, categories, LocalDateTime.now()));
     }
 
+    @Operation(summary = "Get category by ID", description = "Get category by ID. Required actor: ADMIN. Security constraint: hasRole('ADMIN'). Successful responses are wrapped in the application ApiResponse envelope.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", content = @Content(schema = @Schema(implementation = CategoryResponseDto.class)))
+    })
     @GetMapping("/{id}")
     @Tag(name = "Admin")
     @PreAuthorize("hasRole('ADMIN')")
@@ -52,6 +64,10 @@ public class CategoryController {
         return ResponseEntity.ok(new ApiResponse<>(message, category, LocalDateTime.now()));
     }
 
+    @Operation(summary = "Create category", description = "Create category. Required actor: ADMIN. Security constraint: hasRole('ADMIN'). Successful responses are wrapped in the application ApiResponse envelope.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Success", content = @Content(schema = @Schema(implementation = Void.class)))
+    })
     @PostMapping(
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
@@ -71,6 +87,10 @@ public class CategoryController {
                 .body(new ApiResponse<>(message, null, LocalDateTime.now()));
     }
 
+    @Operation(summary = "Update category", description = "Update category. Required actor: ADMIN. Security constraint: hasRole('ADMIN'). Successful responses are wrapped in the application ApiResponse envelope.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", content = @Content(schema = @Schema(implementation = Void.class)))
+    })
     @PutMapping(
             value = "/{id}",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
@@ -92,6 +112,10 @@ public class CategoryController {
                 .body(new ApiResponse<>(message, null, LocalDateTime.now()));
     }
 
+    @Operation(summary = "Delete category", description = "Delete category. Required actor: ADMIN. Security constraint: hasRole('ADMIN'). Successful responses are wrapped in the application ApiResponse envelope.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", content = @Content(schema = @Schema(implementation = Void.class)))
+    })
     @DeleteMapping("/{id}")
     @Tag(name = "Admin")
     @PreAuthorize("hasRole('ADMIN')")

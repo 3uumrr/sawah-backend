@@ -9,6 +9,8 @@ import com.sawah.sawah_backend.service.fileStorage.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -70,7 +72,6 @@ public class CategoryServiceImpl implements CategoryService {
             }
         }
 
-        categoryRepository.save(category);
     }
 
     @Override
@@ -80,6 +81,13 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = getCategoryById(id);
 
         categoryRepository.delete(category);
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                fileStorageService.deleteFile(CATEGORY_ICON_DIR, category.getIconUrl());
+            }
+        });
 
     }
 
@@ -131,5 +139,10 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public List<Category> findAllByIds(List<Long> categoryIds) {
         return categoryRepository.findAllById(categoryIds);
+    }
+
+    @Override
+    public Long categoriesCount() {
+        return categoryRepository.count();
     }
 }
