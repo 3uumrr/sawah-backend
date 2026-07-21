@@ -1,4 +1,4 @@
-package com.sawah.sawah_backend.dto;
+package com.sawah.sawah_backend.dto.language;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

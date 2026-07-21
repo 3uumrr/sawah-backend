@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Entity(name = "languages")
+@Entity
 @Table(name = "languages", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"code"}, name = "uk_languages_code")
 })

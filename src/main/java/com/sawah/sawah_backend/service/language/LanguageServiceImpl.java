@@ -1,6 +1,6 @@
 package com.sawah.sawah_backend.service.language;
 
-import com.sawah.sawah_backend.dto.LanguageInputDto;
+import com.sawah.sawah_backend.dto.language.LanguageInputDto;
 import com.sawah.sawah_backend.exceptions.ResourceNotFoundException;
 import com.sawah.sawah_backend.mapper.LanguageMapper;
 import com.sawah.sawah_backend.models.Language;
