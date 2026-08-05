@@ -5,6 +5,8 @@ import com.sawah.sawah_backend.enums.ServiceRequestStatus;
 import com.sawah.sawah_backend.enums.VehicleType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -16,17 +18,15 @@ import java.time.LocalTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Entity(name = "service_requests")
+@Entity
+@Table(name = "service_requests")
 public class ServiceRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "request_date" , nullable = false)
-    private LocalDate requestDate;
-
-    @Column(name = "request_time" , nullable = false)
-    private LocalTime requestTime;
+    @Column(name = "booking_date_time" , nullable = false)
+    private LocalDateTime bookingDateTime;
 
     @Column(name = "duration_hours")
     private Integer durationHours;
@@ -46,6 +46,12 @@ public class ServiceRequest {
 
     @Column(name = "additional_notes" , columnDefinition = "TEXT")
     private String additionalNotes;
+
+    @Column(name = "pickup_latitude")
+    private Double pickupLatitude;
+
+    @Column(name = "pickup_longitude")
+    private Double pickupLongitude;
 
     @Column(name = "total_price" , nullable = false ,precision = 10, scale = 2)
     private BigDecimal totalPrice;
@@ -79,19 +85,23 @@ public class ServiceRequest {
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tourist_id" , nullable = false)
+    @JoinColumn(name = "tourist_id" , nullable = true)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private User tourist;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "place_id" , nullable = false)
+    @JoinColumn(name = "place_id" , nullable = true)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private Place place;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "provider_id" , nullable = false)
+    @JoinColumn(name = "provider_id" , nullable = true)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private Provider provider;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "service_id" , nullable = false)
+    @JoinColumn(name = "service_id" , nullable = true)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private Service service;
 
     @PreUpdate
