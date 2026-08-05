@@ -2,6 +2,8 @@ package com.sawah.sawah_backend.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -10,8 +12,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Entity(name = "favorite_places")
-@Table(uniqueConstraints = {
+@Entity
+@Table(
+        name = "favorite_places",
+        uniqueConstraints = {
         @UniqueConstraint(
                 name = "uk_favorite_place_user",
                 columnNames = {"user_id","place_id"}
@@ -24,10 +28,12 @@ public class FavoritePlace {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
     @ManyToOne
     @JoinColumn(name = "place_id" , nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Place place;
 
     @Column(name = "created_at", nullable = false, updatable = false)
