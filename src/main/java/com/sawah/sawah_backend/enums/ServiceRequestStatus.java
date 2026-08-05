@@ -4,6 +4,7 @@ public enum ServiceRequestStatus {
     PENDING,
     ACCEPTED,
     REJECTED,
+    WAITING_FOR_CONFIRMATION,
     COMPLETED,
     CANCELLED
 }
