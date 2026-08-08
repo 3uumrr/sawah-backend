@@ -2,7 +2,10 @@ package com.sawah.sawah_backend.models;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -13,7 +16,11 @@ import java.time.LocalTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Entity(name = "places")
+@Entity
+@Table(name = "places", indexes = {
+        @Index(name = "uq_places_name_en", columnList = "name_en", unique = true),
+        @Index(name = "uq_places_name_ar", columnList = "name_ar", unique = true)
+})
 public class Place {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,7 +56,15 @@ public class Place {
     @Column(nullable = false, precision = 10, scale = 8)
     private BigDecimal latitude;
 
-    @Column(name = "main_image_url" , nullable = false)
+    @Column(nullable = false, precision = 3, scale = 2)
+    @Builder.Default
+    private BigDecimal rating = BigDecimal.ZERO;;
+
+    @Column(nullable = false , name = "total_reviews")
+    @Builder.Default
+    private Integer totalReviews  = 0;
+
+    @Column(name = "main_image_url")
     private String mainImageUrl;
 
     @Column(name = "booking_url", length = 500)
@@ -64,7 +79,8 @@ public class Place {
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @ManyToOne
-    @JoinColumn(name = "category_id")
+    @JoinColumn(name = "category_id", nullable = true)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private Category category;
 
 
