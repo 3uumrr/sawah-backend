@@ -2,6 +2,8 @@ package com.sawah.sawah_backend.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -10,7 +12,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Entity(name = "Place_photos")
+@Entity
+@Table(name = "place_photos")
 public class PlacePhoto {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,10 +21,6 @@ public class PlacePhoto {
 
     @Column(nullable = false, length = 500)
     private String url;
-
-    @Column(name = "is_primary")
-    @Builder.Default
-    private Boolean isPrimary = false;
 
     @Column(name = "display_order")
     @Builder.Default
@@ -34,6 +33,7 @@ public class PlacePhoto {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "place_id" , nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Place place;
 
 }
