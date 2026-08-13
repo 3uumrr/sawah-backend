@@ -39,6 +39,7 @@ public class JwtUtils {
                 .setSubject(userDetails.getUsername())
                 .claim("id",userDetails.getId())
                 .claim("roles",roles)
+                .claim("providerStatus", userDetails.getProviderStatus())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(new Date().getTime() + expirationTime)) // One Hour
                 .signWith(key())
