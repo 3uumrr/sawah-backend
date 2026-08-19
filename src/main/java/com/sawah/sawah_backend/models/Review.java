@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -12,8 +14,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Entity(name = "reviews")
-@Table(name = "reviews",
+@Entity
+@Table
+        (name = "reviews",
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_review_user_place",
                 columnNames = {"place_id", "user_id"}
@@ -42,10 +45,12 @@ public class Review {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "place_id" , nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Place place;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id" , nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
     @PreUpdate
