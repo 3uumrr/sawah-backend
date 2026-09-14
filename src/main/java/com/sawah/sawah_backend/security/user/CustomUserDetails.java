@@ -1,5 +1,6 @@
 package com.sawah.sawah_backend.security.user;
 
+import com.sawah.sawah_backend.enums.ProviderStatus;
 import com.sawah.sawah_backend.enums.UserAccStatus;
 import com.sawah.sawah_backend.models.User;
 import org.springframework.security.core.GrantedAuthority;
@@ -11,17 +12,25 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class CustomUserDetails implements UserDetails {
-    private User user;
+    private final User user;
+    private final ProviderStatus providerStatus;
 
     public CustomUserDetails(User user){
         this.user = user;
+        this.providerStatus = null;
     }
 
+    public CustomUserDetails(User user, ProviderStatus providerStatus) {
+        this.user = user;
+        this.providerStatus = providerStatus;
+    }
 
     public Long getId() {
         return user.getId();
     }
-
+    public ProviderStatus getProviderStatus() {
+        return providerStatus;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
