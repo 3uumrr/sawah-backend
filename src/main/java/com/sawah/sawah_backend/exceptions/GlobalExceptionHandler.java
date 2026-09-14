@@ -21,12 +21,42 @@ public class GlobalExceptionHandler  {
 
     private final MessageSource messageSource;
 
+    @ExceptionHandler(ProviderNotApprovedException.class)
+    public ResponseEntity<ApiResponse> providerNotApprovedException(ProviderNotApprovedException e , Locale locale){
+
+        String errorMessage = translate(e.getMessage(),locale);
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiResponse(errorMessage, null, LocalDateTime.now()));
+
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse> resourceNotFoundException(ResourceNotFoundException e , Locale locale){
 
         String errorMessage = translate(e.getMessage(),locale);
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiResponse(errorMessage, null, LocalDateTime.now()));
+
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiResponse> badRequestException(BadRequestException e , Locale locale){
+
+        String errorMessage = translate(e.getMessage(),locale);
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse(errorMessage, null, LocalDateTime.now()));
+
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiResponse> forbiddenException(ForbiddenException e, Locale locale){
+
+        String errorMessage = translate(e.getMessage(),locale);
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(new ApiResponse(errorMessage, null, LocalDateTime.now()));
 
     }
