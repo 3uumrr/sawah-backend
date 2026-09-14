@@ -1,5 +1,6 @@
 package com.sawah.sawah_backend.service.auth;
 
+import com.sawah.sawah_backend.dto.auth.RefreshTokenRequest;
 import com.sawah.sawah_backend.dto.auth.ResetPasswordRequest;
 import com.sawah.sawah_backend.dto.auth.GoogleAuthRequestDto;
 import com.sawah.sawah_backend.dto.user.UserInputDto;
@@ -13,6 +14,7 @@ public interface AuthService {
     AuthResponse login(LoginRequest request);
     AuthResponse loginWithGoogle(GoogleAuthRequestDto request);
     void signUp(UserInputDto user, String accountType);
+    AuthResponse refreshToken(RefreshTokenRequest request);
 
     void initiatePasswordReset(String email, Locale locale);
     void resetPassword(ResetPasswordRequest request) throws ResourceNotFoundException;

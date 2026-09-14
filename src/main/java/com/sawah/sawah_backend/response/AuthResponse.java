@@ -13,6 +13,7 @@ import java.util.Set;
 public class AuthResponse {
     private String message;
     private String token;
+    private String refreshToken;
     private Boolean isProfileComplete;
     private Set<String> roles;
     private LocalDateTime timestamp;

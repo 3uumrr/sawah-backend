@@ -1,5 +1,6 @@
 package com.sawah.sawah_backend.service.auth;
 
+import com.sawah.sawah_backend.dto.auth.RefreshTokenRequest;
 import com.sawah.sawah_backend.dto.auth.ResetPasswordRequest;
 import com.sawah.sawah_backend.dto.auth.GoogleAuthRequestDto;
 import com.sawah.sawah_backend.dto.user.UserInputDto;
@@ -12,7 +13,9 @@ import com.sawah.sawah_backend.exceptions.ResourceNotFoundException;
 import com.sawah.sawah_backend.helper.EmailVerificationService;
 import com.sawah.sawah_backend.helper.OtpGenerator;
 import com.sawah.sawah_backend.models.Provider;
+import com.sawah.sawah_backend.models.RefreshToken;
 import com.sawah.sawah_backend.models.User;
+import com.sawah.sawah_backend.repository.RefreshTokenRepository;
 import com.sawah.sawah_backend.repository.UserRepository;
 import com.sawah.sawah_backend.requests.LoginRequest;
 import com.sawah.sawah_backend.response.AuthResponse;
@@ -32,6 +35,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -53,6 +57,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final RoleService roleService;
     private final GoogleTokenVerifier googleTokenVerifier;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Override
     public AuthResponse login(LoginRequest request) {
@@ -136,6 +141,26 @@ public class AuthServiceImpl implements AuthService {
         return userRepository.save(user);
     }
 
+    @Override
+    @Transactional
+    public AuthResponse refreshToken(RefreshTokenRequest request) {
+        String token = request.refreshToken();
+
+        jwtUtils.validateToken(token);
+
+        RefreshToken storedToken = refreshTokenRepository.findByToken(token)
+                .orElseThrow(() -> new BadRequestException("auth.refresh.invalid"));
+
+        refreshTokenRepository.delete(storedToken);
+
+        User user = storedToken.getUser();
+        CustomUserDetails userDetails = toCustomUserDetails(user);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities());
+
+        return buildAuthResponse(userDetails, authentication);
+    }
+
     private AuthResponse buildAuthResponse(CustomUserDetails userDetails, Authentication authentication) {
         Set<String> roles = userDetails.getAuthorities()
                 .stream()
@@ -152,13 +177,24 @@ public class AuthServiceImpl implements AuthService {
             rejectionReason = provider.getRejectionReason();
 
             if (provider.getAccountStatus() == ProviderStatus.REJECTED) {
-                return new AuthResponse(null, null, null, roles, null, providerStatus, rejectionReason);
+                return new AuthResponse(null, null, null, null, roles, null, providerStatus, rejectionReason);
             }
         }
 
-        String token = jwtUtils.generateTokenForUser(authentication);
+        String accessToken = jwtUtils.generateTokenForUser(authentication);
 
-        return new AuthResponse(null, token, userDetails.isProfileComplete(), roles, null, providerStatus, null);
+        User user = userRepository.findByEmailWithRoles(userDetails.getUsername())
+                .orElseThrow(() -> new ResourceNotFoundException("user.not.found"));
+
+        String refreshJwt = jwtUtils.generateRefreshToken(userDetails.getUsername(), userDetails.getId());
+        RefreshToken refreshToken = RefreshToken.builder()
+                .token(refreshJwt)
+                .user(user)
+                .expiryDate(Instant.now().plusMillis(jwtUtils.getRefreshExpirationTime()))
+                .build();
+        refreshTokenRepository.save(refreshToken);
+
+        return new AuthResponse(null, accessToken, refreshJwt, userDetails.isProfileComplete(), roles, null, providerStatus, null);
     }
 
     private CustomUserDetails toCustomUserDetails(User user) {

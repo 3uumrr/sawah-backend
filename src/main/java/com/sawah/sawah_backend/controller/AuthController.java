@@ -1,6 +1,7 @@
 package com.sawah.sawah_backend.controller;
 
 import com.sawah.sawah_backend.dto.auth.GoogleAuthRequestDto;
+import com.sawah.sawah_backend.dto.auth.RefreshTokenRequest;
 import com.sawah.sawah_backend.dto.auth.ResetPasswordRequest;
 import com.sawah.sawah_backend.dto.user.UserInputDto;
 import com.sawah.sawah_backend.requests.LoginRequest;
@@ -135,6 +136,25 @@ public class AuthController {
 
 
         return ResponseEntity.ok(new ApiResponse<>(message, null, LocalDateTime.now()));
+    }
+
+    @Operation(summary = "Refresh access token", description = "Issue a new access token and refresh token using a valid refresh token. Public endpoint; authentication is not enforced by method-level security.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", content = @Content(schema = @Schema(implementation = AuthResponse.class)))
+    })
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(
+            @RequestBody @Valid RefreshTokenRequest request,
+            Locale locale) {
+
+        AuthResponse authResponse = authService.refreshToken(request);
+
+        String message = messageSource.getMessage("auth.refresh.success", null, locale);
+
+        authResponse.setMessage(message);
+        authResponse.setTimestamp(LocalDateTime.now());
+
+        return ResponseEntity.ok(authResponse);
     }
 
 

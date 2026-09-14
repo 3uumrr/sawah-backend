@@ -28,6 +28,13 @@ public class JwtUtils {
     @Value("${auth.token.expiration-in-mils}")
     private int expirationTime;
 
+    @Value("${auth.token.refresh-expiration-in-mils}")
+    private long refreshExpirationTime;
+
+    public long getRefreshExpirationTime() {
+        return refreshExpirationTime;
+    }
+
     public String generateTokenForUser(Authentication authentication){
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
@@ -41,7 +48,7 @@ public class JwtUtils {
                 .claim("roles",roles)
                 .claim("providerStatus", userDetails.getProviderStatus())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(new Date().getTime() + expirationTime)) // One Hour
+                .setExpiration(new Date(new Date().getTime() + expirationTime)) 
                 .signWith(key())
                 .compact();
     }
@@ -71,6 +78,17 @@ public class JwtUtils {
             log.error("Invalid JWT: {}", e.getMessage());
             throw new JwtException("Invalid token");
         }
+    }
+
+    public String generateRefreshToken(String email, Long userId) {
+        return Jwts.builder()
+                .setSubject(email)
+                .claim("id", userId)
+                .claim("type", "refresh")
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(new Date().getTime() + refreshExpirationTime))
+                .signWith(key())
+                .compact();
     }
 
     public Key key(){
