@@ -16,12 +16,18 @@ public class FileStorageServiceImpl implements FileStorageService{
 
     private static final String USER_UPLOAD_DIR = "user_photos/";
     private static final String CATEGORY_ICON_DIR = "category_icons/";
+    private static final String PROVIDER_ID_PHOTO_DIR = "providers/national-ids/";
+    private static final String PLACE_PHOTO_DIR = "place_photos/";
+
 
 
     public FileStorageServiceImpl(){
         try {
             Files.createDirectories(Paths.get(USER_UPLOAD_DIR));
             Files.createDirectories(Paths.get(CATEGORY_ICON_DIR));
+            Files.createDirectories(Paths.get(PROVIDER_ID_PHOTO_DIR));
+            Files.createDirectories(Paths.get(PLACE_PHOTO_DIR));
+
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -29,7 +35,7 @@ public class FileStorageServiceImpl implements FileStorageService{
     }
 
     @Override
-    public String storeFile(MultipartFile file , String dir) throws IOException {
+    public String storeFile( String dir, MultipartFile file) throws IOException {
         String extension = StringUtils.getFilenameExtension(file.getOriginalFilename());
         String filename = UUID.randomUUID().toString() + "." + extension;
         Path rootPath = Paths.get(dir);
@@ -41,7 +47,7 @@ public class FileStorageServiceImpl implements FileStorageService{
     }
 
     @Override
-    public void deleteFile(String fileName , String dir) {
+    public void deleteFile(String dir,String fileName ) {
         if (fileName == null || fileName.isEmpty()) return;
 
         try {

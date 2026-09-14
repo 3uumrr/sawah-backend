@@ -4,6 +4,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 public interface FileStorageService {
-    String storeFile(MultipartFile file, String dir) throws IOException;
-    void deleteFile(String fileName , String dir);
+    String storeFile(String dir, MultipartFile file) throws IOException;
+    void deleteFile(String dir, String fileName);
 }
