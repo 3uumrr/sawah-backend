@@ -3,6 +3,10 @@ package com.sawah.sawah_backend.controller;
 import com.sawah.sawah_backend.response.ApiResponse;
 import com.sawah.sawah_backend.security.user.CustomUserDetails;
 import com.sawah.sawah_backend.service.visitedPlace.VisitedPlaceService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
@@ -26,6 +30,10 @@ public class VisitedPlaceController {
     private final VisitedPlaceService visitedPlaceService;
     private final MessageSource messageSource;
 
+    @Operation(summary = "Add visited place", description = "Add visited place. Required actor: TOURIST. Security constraint: hasRole('TOURIST'). Successful responses are wrapped in the application ApiResponse envelope.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Success", content = @Content(schema = @Schema(implementation = Void.class)))
+    })
     @PostMapping("/{placeId}")
     @PreAuthorize("hasRole('TOURIST')")
     public ResponseEntity<ApiResponse<Void>> addVisitedPlace(
@@ -41,6 +49,10 @@ public class VisitedPlaceController {
                 .body(new ApiResponse<>(message, null, LocalDateTime.now()));
     }
 
+    @Operation(summary = "Remove visited place", description = "Remove visited place. Required actor: TOURIST. Security constraint: hasRole('TOURIST'). Successful responses are wrapped in the application ApiResponse envelope.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success", content = @Content(schema = @Schema(implementation = Void.class)))
+    })
     @DeleteMapping("/{placeId}")
     @PreAuthorize("hasRole('TOURIST')")
     public ResponseEntity<ApiResponse<Void>> removeVisitedPlace(
