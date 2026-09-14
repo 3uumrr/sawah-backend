@@ -15,8 +15,10 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Entity(name = "users")
-@Table(name = "users" , indexes = {
+@Entity
+@Table(
+        name = "users",
+        indexes = {
         @Index(name = "idx_user_email" , columnList = "email" , unique = true),
         @Index(name = "idx_user_phone" , columnList = "phone_number" , unique = true)
 })
@@ -49,6 +51,13 @@ public class User {
 
     @Column(name = "profile_picture_url" , nullable = true)
     private String profilePictureUrl;
+
+    @Column(name = "auth_provider", length = 20)
+    @Builder.Default
+    private String authProvider = "LOCAL";
+
+    @Column(name = "provider_subject", length = 255)
+    private String providerSubject;
 
     @Column(name = "preferred_language")
     @Enumerated(EnumType.STRING)
