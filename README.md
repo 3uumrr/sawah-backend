@@ -31,105 +31,242 @@ Sawah brings together **AI intelligence**, **real-time communication**, and a **
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ System Architecture
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                        Client Apps                               │
-│              (Mobile — Android / iOS / Web)                      │
-└──────────────┬──────────────────────┬────────────────────────────┘
-               │ REST / WebSocket     │
-               ▼                      ▼
-┌──────────────────────────┐  ┌──────────────────────────────────┐
-│   Sawah Spring Boot API  │  │   WebSocket (STOMP over SockJS)  │
-│       :9091              │  │   /ws-notifications              │
-│                          │  │   Real-time push notifications   │
-│  ┌────────────────────┐  │  └──────────────────────────────────┘
-│  │  Security Layer    │  │
-│  │  JWT + Google OAuth│  │
-│  └────────────────────┘  │
-│  ┌────────────────────┐  │  ┌──────────────────────────────────┐
-│  │  Business Services │  │──│  FastAPI Microservice  :8000     │
-│  │  28 service modules│  │  │  • /api/predict (Landmark CNN)   │
-│  └────────────────────┘  │  │  • /api/recommend (ML Engine)    │
-│  ┌────────────────────┐  │  └──────────────────────────────────┘
-│  │  Spring AI          │  │
-│  │  Gemini 2.5 Flash  │  │  ┌──────────────────────────────────┐
-│  └────────────────────┘  │  │  External Services               │
-└──────────┬───────────────┘  │  • Google OAuth 2.0              │
-           │                   │  • SMTP Email (Password Reset)   │
-           ▼                   │  • Email Validation API          │
-┌──────────────────────────┐  └──────────────────────────────────┘
-│   MySQL  │  Redis Cache  │
-│  Primary │  TTL: 10min   │
-│  Storage │  Performance  │
-└──────────────────────────┘
-```
+### Context Diagram
+
+<p align="center">
+  <img src="docs/diagrams/context-diagram.png" alt="Context Diagram — System boundary showing all actors and external services" width="800">
+</p>
+
+> The Sawah system sits at the center, integrating with **Tourist Users**, **Provider Users** (Driver / Guide / Translator), **Admin Users**, and four external AI/ML services: **Gemini AI**, **AI Recognition**, **AI Recommendation**, and **Maps Service**.
+
+### High-Level Architecture
+
+<p align="center">
+  <img src="docs/diagrams/system-architecture.png" alt="System Architecture — Client Layer, Backend Layer, External Services, Data Layer" width="800">
+</p>
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
+| **Client Layer** | Flutter Mobile (iOS & Android) + React Web App | Tourist / Provider / Admin interfaces |
 | **API Gateway** | Spring Boot 3.5 + Spring Security | REST API, JWT auth, method-level RBAC |
 | **Real-Time** | WebSocket + STOMP + SockJS | Push notifications for booking updates |
 | **AI / ML** | Spring AI + Gemini 2.5 Flash | Chatbot, landmark info generation |
 | **ML Microservice** | FastAPI (Python) | Landmark image recognition (CNN), place recommendations |
 | **Persistence** | MySQL + Spring Data JPA | Primary relational storage |
-| **Caching** | Redis | Response caching with 10-minute TTL |
+| **Caching** | Redis | Response caching with 10-minute TTL, OTP storage |
 | **Email** | Spring Mail + SMTP | OTP delivery, password reset flows |
+
+---
+
+## 📊 Database Design (ERD)
+
+<p align="center">
+  <img src="docs/diagrams/erd.png" alt="Entity Relationship Diagram — 24 entities with full relationships" width="900">
+</p>
+
+The database consists of **24 entities** including:
+
+| Entity Group | Tables | Key Relationships |
+|-------------|--------|-------------------|
+| **Users & Auth** | `User`, `Role`, `UserRole`, `RefreshToken` | Many-to-Many roles, one-to-one refresh tokens |
+| **Providers** | `Provider`, `DriverProfile`, `ProviderLanguage`, `ProviderReview` | One-to-One with User, Many-to-One with Service |
+| **Places** | `Place`, `PlacePhoto`, `PlacePrice`, `Category` | Multi-photo support, visitor-type pricing |
+| **Bookings** | `ServiceRequest`, `Service` | Full lifecycle with status tracking |
+| **Discovery** | `FavoritePlace`, `VisitedPlace`, `RecentSearch`, `UserPreference` | Per-user personalization |
+| **Communication** | `ChatConversation`, `ChatMessage`, `Notification` | AI chat history, push notifications |
+| **Moderation** | `Issue`, `Review`, `Language` | Platform management, i18n support |
 
 ---
 
 ## ✨ Core Features
 
 ### 🔐 Authentication & Security
-- **JWT-based authentication** with access + refresh token rotation
-- **Google OAuth 2.0** sign-in (web & mobile client IDs)
-- **Role-Based Access Control** — `TOURIST`, `PROVIDER`, `ADMIN`
-- **BCrypt password hashing** with secure password reset via email OTP
-- **Method-level security** with `@PreAuthorize` across all endpoints
-- **Stateless session management** (no server-side sessions)
+- **JWT-based authentication** with access token + refresh token rotation
+- **Google OAuth 2.0** sign-in with support for both web and mobile client IDs
+- **Role-Based Access Control (RBAC)** with three roles: `TOURIST`, `PROVIDER`, `ADMIN`
+- **BCrypt password hashing** with secure password reset flow via email OTP
+- **Method-level security** with `@PreAuthorize` annotations across all 18 controllers
+- **Stateless session management** — zero server-side sessions, pure JWT
+- **Email validation API** integration for verifying user email addresses
+- **Account status management** — Admin can activate/deactivate user accounts
 
 ### 🤖 AI-Powered Intelligence
-- **Travel Chatbot** — Conversational AI powered by Gemini 2.5 Flash via Spring AI, with context-aware responses and auto-generated conversation titles
-- **Landmark Recognition** — Upload a photo → FastAPI CNN model identifies the landmark → Gemini generates rich, localized information
-- **Smart Recommendations** — ML-based place recommendation engine served via the FastAPI microservice
+
+#### AI Travel Chatbot
+- Conversational AI powered by **Gemini 2.5 Flash** via Spring AI
+- Context-aware responses — detects first message for warm welcome, then switches to concise answers
+- **Auto-generated conversation titles** — AI summarizes the first message into a catchy 3-word title
+- Full conversation management: create, list, rename, delete conversations
+- **Bilingual support** — automatically responds in the same language as the user's prompt (Arabic / English)
+
+<p align="center">
+  <img src="docs/diagrams/seq-chatbot.png" alt="Chatbot Sequence Diagram" width="700">
+</p>
+
+<p align="center">
+  <img src="docs/diagrams/activity-chatbot.png" alt="Chatbot Activity Diagram" width="300">
+</p>
+
+#### AI Landmark Recognition
+- **Upload a photo** → FastAPI CNN model identifies the landmark name → Gemini generates rich, localized tourist information
+- Two-stage AI pipeline: image classification (FastAPI `/api/predict`) + content generation (Gemini)
+- Response language is driven by the `Accept-Language` header — Arabic or English
+- Returns structured JSON with detailed landmark information
+
+<p align="center">
+  <img src="docs/diagrams/seq-landmark.png" alt="Landmark Recognition Sequence Diagram" width="700">
+</p>
+
+<p align="center">
+  <img src="docs/diagrams/activity-landmark.png" alt="Landmark Recognition Activity Diagram" width="300">
+</p>
+
+#### Smart Recommendations
+- ML-based place recommendation engine served via the FastAPI microservice (`/api/recommend`)
+- Personalized based on user preferences and visit history
+- Integrated directly into the Places API (`GET /places/recommendations`)
 
 ### 📍 Places & Discovery
-- Full CRUD for tourist places with multi-photo uploads, categories, and pricing
-- **Favorites** & **Visited Places** tracking per user
-- **Recent Search** history with personalized recall
-- **User Preferences** for tailored discovery experiences
-- **Reviews & Ratings** system for places
+
+A comprehensive place discovery engine with multiple access patterns:
+
+| Feature | Endpoint | Description |
+|---------|---------|-------------|
+| **Browse by Category** | `GET /places/category/{id}` | Filter places by category (historical, beach, etc.) |
+| **Browse by Governorate** | `GET /places/governorate?name=` | Region-based filtering (Arabic & English) |
+| **Typeahead Search** | `GET /places/typeahead?q=` | Real-time search suggestions as user types |
+| **Popular Places** | `GET /places/popular` | Sorted by highest average rating |
+| **Nearby Places** | `GET /places/nearby?lat=&lng=` | Location-aware — returns top 5 nearest places |
+| **Map Bounds** | `POST /places/within-bounds` | Returns all places within map viewport coordinates |
+| **Recommendations** | `GET /places/recommendations` | AI-powered personalized recommendations |
+| **Favorites** | `GET /places/favorites` | User's saved favorite places |
+| **Visited History** | `GET /places/visited` | Places the user has marked as visited |
+| **Recent Searches** | `GET /places/recent-searches` | Recall of recent search activity |
+| **Place Details** | `GET /places/{id}` | Full place detail with photos, pricing, reviews |
+| **Admin CRUD** | `POST/PUT/DELETE /places` | Multipart form data with image uploads |
+
+<p align="center">
+  <img src="docs/diagrams/seq-place-discovery.png" alt="Place Discovery Sequence Diagram" width="800">
+</p>
+
+<p align="center">
+  <img src="docs/diagrams/activity-place-discovery.png" alt="Place Discovery Activity Diagram" width="400">
+</p>
+
+- **Multi-photo uploads** — up to 10MB per image, stored server-side with display ordering
+- **Visitor-type pricing** — different prices for `ADULT`, `CHILD`, `STUDENT` × `EGYPTIAN`, `FOREIGNER`
+- **Bilingual content** — names, descriptions, governorates stored in both Arabic and English
+- **Reviews & Ratings** — per-place review system with auto-calculated average rating
 
 ### 🧑‍💼 Provider Marketplace
-- Service provider registration with ID verification workflow (`PENDING` → `APPROVED` / `REJECTED`)
-- Three service types: **Guide**, **Translator**, **Driver**
-- Provider profiles with bio, experience, hourly/daily rates, language proficiency levels
-- **Provider Reviews & Ratings** with aggregate scoring
-- Availability management and provider search/filtering
+
+A full-featured marketplace connecting tourists with verified local service providers:
+
+| Feature | Description |
+|---------|-------------|
+| **Three Service Types** | `GUIDE` — Tour guides, `TRANSLATOR` — Language translators, `DRIVER` — Vehicle drivers |
+| **Verification Workflow** | Provider submits national ID (front & back photos) → Admin reviews → `APPROVED` / `REJECTED` with reason |
+| **Profile Completion** | Two-step onboarding: register → complete profile (bio, rates, languages, vehicle info for drivers) |
+| **Language Proficiency** | Providers list spoken languages with proficiency levels: `BEGINNER`, `INTERMEDIATE`, `FLUENT` |
+| **Pricing** | Hourly (`ratePerHour`) and daily (`ratePerDay`) pricing with BigDecimal precision |
+| **Availability Toggle** | Providers can toggle their availability on/off |
+| **Ratings & Reviews** | Aggregate rating (avg + count), per-booking reviews from tourists |
+| **Dashboard & Earnings** | Provider dashboard with booking stats, completion rates, and earnings analytics |
+| **Search & Filter** | Tourists can filter by service type, sort by rating or price |
+| **Driver Profiles** | Extended profile for drivers: vehicle type (`SEDAN`, `SUV`, `VAN`), vehicle capacity |
 
 ### 📅 Booking & Service Requests
-- Full booking lifecycle: `PENDING` → `ACCEPTED` → `COMPLETED` / `REJECTED` / `CANCELLED`
-- Support for hourly & daily bookings with automatic price calculation
-- Location-aware bookings with pickup coordinates
-- Vehicle type preferences for driver bookings
-- Provider response messages and timestamped status transitions
+
+A complete booking lifecycle with real-time status tracking and notifications:
+
+<p align="center">
+  <img src="docs/diagrams/seq-booking.png" alt="Booking Sequence Diagram" width="700">
+</p>
+
+<p align="center">
+  <img src="docs/diagrams/activity-booking.png" alt="Booking Activity Diagram" width="350">
+</p>
+
+**Booking Lifecycle:**
+
+```
+PENDING → ACCEPTED → WAITING_FOR_CONFIRMATION → COMPLETED
+   ↓         ↓                    ↓
+CANCELLED  REJECTED         (Report Issue)
+```
+
+| Status | Triggered By | Description |
+|--------|-------------|-------------|
+| `PENDING` | Tourist | Booking request created, provider notified |
+| `ACCEPTED` | Provider | Provider accepts the request (with optional message) |
+| `REJECTED` | Provider | Provider rejects the request (with optional reason) |
+| `WAITING_FOR_CONFIRMATION` | Provider | Provider marks trip as complete, awaiting tourist confirmation |
+| `COMPLETED` | Tourist | Tourist confirms completion → prompts for provider review |
+| `CANCELLED` | Tourist | Tourist cancels the booking |
+
+**Booking Features:**
+- Hourly & daily duration support with automatic price calculation
+- Location-aware bookings with pickup latitude/longitude
+- Vehicle type preferences for driver bookings (`SEDAN`, `SUV`, `VAN`)
+- Translation language specification for translator bookings
+- Additional notes field for special requests
+- Post-completion **provider review** with star rating + comment
 
 ### 🔔 Real-Time Notifications
-- **WebSocket (STOMP/SockJS)** push notifications for booking status changes
-- JWT-authenticated WebSocket handshake (header & query parameter support)
-- Persistent notification storage with read/unread tracking
-- User-specific notification queues (`/user/{id}/queue/notifications`)
+
+- **WebSocket (STOMP/SockJS)** push notifications for all booking status changes
+- JWT-authenticated WebSocket handshake — supports both `Authorization` header and `access_token` query parameter
+- Persistent notification storage in database with read/unread tracking
+- User-specific notification queues: `/user/{userId}/queue/notifications`
+- Unread count endpoint for badge display
+- Topic-based broker: `/topic` (broadcast) and `/queue` (personal)
 
 ### 🌍 Internationalization (i18n)
-- Full **English** and **Arabic** support across all API responses
+
+- Full **English** and **Arabic** (العربية) support across all API responses
 - `Accept-Language` header-driven locale resolution
 - Localized error messages, success messages, and notification content
-- AI chatbot responds in the same language as the user's prompt
+- AI chatbot and landmark service respond in the user's detected language
+- User preferred language setting (toggleable via API)
+- Bilingual data model — places, categories, and governorates stored in both AR/EN
 
-### 🛡️ Admin Dashboard
-- Admin-only endpoints for platform management
-- Provider approval/rejection workflow with reason tracking
-- Issue/complaint management system with status tracking (`OPEN` → `IN_PROGRESS` → `RESOLVED` / `CLOSED`)
+### 🛡️ Admin Dashboard & Moderation
+
+| Feature | Endpoint | Description |
+|---------|---------|-------------|
+| **Dashboard Analytics** | `GET /admin/dashboard` | Platform-wide statistics and metrics |
+| **Provider Approval** | `PATCH /providers/{id}/approve` | Approve provider registration |
+| **Provider Rejection** | `PATCH /providers/{id}/reject` | Reject with reason |
+| **User Management** | `GET/DELETE /users`, `PATCH /users/{id}/account-status` | List, search, delete, activate/deactivate users |
+| **Issue Management** | `GET/PUT /issues` | Track and resolve user-reported issues (`OPEN` → `IN_PROGRESS` → `RESOLVED` / `CLOSED`) |
+| **Place Management** | `POST/PUT/DELETE /places` | Full CRUD with multi-image upload support |
+| **Category Management** | `GET/POST/PUT/DELETE /categories` | Manage place categories with icons |
+
+### 👤 User Management
+
+- **Tourist profile completion** — phone number, country, gender, profile photo
+- **Provider profile completion** — bio, national ID, experience years, rates, languages
+- **Password change** — authenticated password update
+- **Profile photo upload** — multipart file upload with server-side storage
+- **Account deletion** — self-service account deletion
+- **Preferred language toggle** — switch between AR/EN
+
+---
+
+## 🔀 Use Case Diagram
+
+<p align="center">
+  <img src="docs/diagrams/use-case-diagram.png" alt="Use Case Diagram — Admin, Tourist, Provider, AI Service actors" width="700">
+</p>
+
+The diagram shows all system actors and their available use cases:
+- **Admin** → Manage places, approve/reject providers, manage issues, view analytics
+- **Tourist** → Browse/search places, book providers, use AI chatbot & landmark scanner, manage favorites/visited/reviews
+- **Provider** → Register, manage bookings (accept/reject/complete), view reviews & earnings
+- **AI Service** → Landmark recognition, recommendation generation
+- **AI Chatbot (Gemini)** → Answer tourism questions with contextual, multilingual responses
 
 ---
 
@@ -152,6 +289,7 @@ Sawah brings together **AI intelligence**, **real-time communication**, and a **
 | **Boilerplate** | Lombok | 1.18.30 |
 | **Auth (OAuth)** | Google API Client + Auth Library | 2.4.0 / 1.23.0 |
 | **Monitoring** | Spring Actuator | — |
+| **Validation** | Jakarta Bean Validation | — |
 | **Build** | Maven Wrapper | — |
 | **ML Microservice** | FastAPI (Python) | — |
 
@@ -254,21 +392,27 @@ OpenAPI JSON spec: `http://localhost:9091/v3/api-docs`
 
 ### Key Endpoint Categories
 
-| Prefix | Description | Auth Required |
-|--------|------------|:------------:|
-| `POST /api/v1/auth/**` | Login, Sign-up, Google OAuth, Password Reset, Token Refresh | ❌ |
-| `GET/POST /api/v1/places/**` | Place CRUD, search, photos, pricing | ✅ |
-| `GET/POST /api/v1/providers/**` | Provider profiles, search, availability | ✅ |
-| `GET/POST /api/v1/bookings/**` | Service request lifecycle management | ✅ |
-| `POST /api/v1/chats/messages` | AI chatbot conversations | ✅ (Tourist) |
-| `POST /api/v1/landmarks/explore` | AI landmark recognition from image | ✅ (Tourist) |
-| `GET /api/v1/notifications/me` | Real-time notification feed | ✅ |
-| `GET/POST /api/v1/reviews/**` | Place reviews & ratings | ✅ |
-| `GET/POST /api/v1/categories/**` | Place categories management | ✅ |
-| `GET/POST /api/v1/services/**` | Service type management | ✅ |
-| `GET /api/v1/users/**` | User profiles & preferences | ✅ |
-| `GET /api/v1/admin/**` | Admin dashboard & provider approval | ✅ (Admin) |
-| `WS /ws-notifications` | WebSocket (STOMP/SockJS) endpoint | JWT Token |
+| Prefix | Description | Auth | Role |
+|--------|------------|:----:|:----:|
+| `POST /api/v1/auth/login` | Email/password authentication | ❌ | — |
+| `POST /api/v1/auth/google` | Google OAuth sign-in | ❌ | — |
+| `POST /api/v1/auth/sign-up` | Tourist registration | ❌ | — |
+| `POST /api/v1/auth/provider/sign-up` | Provider registration | ❌ | — |
+| `POST /api/v1/auth/refresh` | Refresh access token | ❌ | — |
+| `POST /api/v1/auth/forgot-password` | Initiate password reset | ❌ | — |
+| `POST /api/v1/auth/reset-password` | Reset password with OTP | ❌ | — |
+| `GET/POST /api/v1/places/**` | Place discovery, search, CRUD | ✅ | Tourist / Admin |
+| `GET/POST /api/v1/providers/**` | Provider profiles & management | ✅ | Provider / Admin |
+| `GET/POST /api/v1/bookings/**` | Service request lifecycle | ✅ | Tourist / Provider |
+| `POST /api/v1/chats/messages` | AI chatbot conversations | ✅ | Tourist |
+| `POST /api/v1/landmarks/explore` | AI landmark recognition | ✅ | Tourist |
+| `GET /api/v1/notifications/me` | Notification feed | ✅ | Any |
+| `GET/POST /api/v1/reviews/**` | Place reviews & ratings | ✅ | Tourist |
+| `GET/POST /api/v1/categories/**` | Place categories | ✅ | Admin |
+| `GET/POST /api/v1/services/**` | Service type management | ✅ | Admin |
+| `GET /api/v1/users/**` | User management | ✅ | Admin / Self |
+| `GET /api/v1/admin/**` | Admin dashboard | ✅ | Admin |
+| `WS /ws-notifications` | WebSocket STOMP endpoint | JWT | Any |
 
 ---
 
@@ -279,15 +423,24 @@ sawah-backend/
 ├── src/main/java/com/sawah/sawah_backend/
 │   ├── config/                  # App, Security, Redis, WebSocket, CORS configs
 │   ├── controller/              # 18 REST controllers
+│   │   ├── AuthController           # Login, signup, OAuth, password reset, token refresh
+│   │   ├── PlaceController          # 13 endpoints — CRUD, search, nearby, recommendations
+│   │   ├── ProviderController       # 15 endpoints — registration, approval, dashboard
+│   │   ├── BookingController        # 8 endpoints — full booking lifecycle + reviews
+│   │   ├── ChatController           # AI chatbot conversations
+│   │   ├── LandmarkController       # AI landmark recognition
+│   │   ├── NotificationController   # Push notification management
+│   │   ├── UserController           # Profile, password, account management
+│   │   └── ...                      # Category, Review, Service, Issue, Favorite, etc.
 │   ├── dto/                     # Request/Response DTOs
-│   ├── enums/                   # Role, Status, ServiceCode, VehicleType enums
+│   ├── enums/                   # Role, Status, ServiceCode, VehicleType, Gender, etc.
 │   ├── exceptions/              # Custom exception classes + global handler
 │   ├── helper/                  # Utility helpers
 │   ├── mapper/                  # MapStruct mapper interfaces
 │   ├── models/                  # 24 JPA entity classes
 │   ├── repository/              # Spring Data JPA repositories
 │   ├── requests/                # Request payload POJOs
-│   ├── response/                # Response wrapper classes
+│   ├── response/                # Response wrapper classes (ApiResponse, AuthResponse)
 │   ├── security/
 │   │   ├── jwt/                 # JWT filter, utils, token management
 │   │   └── user/                # CustomUserDetails, UserDetailsService
@@ -295,20 +448,25 @@ sawah-backend/
 │       ├── aiService/
 │       │   ├── chatbot/         # Gemini-powered conversational AI
 │       │   └── landmark/        # Image → Landmark → AI info pipeline
-│       ├── auth/                # Authentication & token management
-│       ├── booking/             # Service request lifecycle
+│       ├── auth/                # Authentication, OAuth, token management
+│       ├── booking/             # Service request lifecycle + price calculation
 │       ├── notification/        # WebSocket push notification engine
 │       ├── recommendation/      # ML-based place recommendations
-│       └── ...                  # category, place, provider, review, etc.
+│       ├── provider/            # Provider onboarding, approval, dashboard
+│       ├── place/               # Place discovery, search, nearby, map bounds
+│       ├── email/               # SMTP email service (OTP, reset)
+│       ├── fileStorage/         # File upload/download management
+│       └── ...                  # user, category, review, issue, favorites, etc.
 ├── src/main/resources/
 │   ├── application.properties   # Configuration (env-var driven)
 │   ├── i18n/
 │   │   ├── messages.properties      # English messages
 │   │   └── messages_ar.properties   # Arabic messages (العربية)
 │   └── templates/               # Email templates
+├── docs/
+│   └── diagrams/                # Architecture, ERD, sequence & activity diagrams
 ├── pom.xml                      # Maven dependencies & build config
-├── mvnw / mvnw.cmd              # Maven wrapper (no Maven install needed)
-└── docs/                        # Additional documentation
+└── mvnw / mvnw.cmd              # Maven wrapper (no Maven install needed)
 ```
 
 ---
